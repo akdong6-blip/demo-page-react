@@ -32,12 +32,40 @@ interface SiteStatsProps {
 export function SiteStats({ industry = "all" }: SiteStatsProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
-  const [stats, setStats] = useState<any[]>([])
+  const [stats, setStats] = useState<any[]>([
+    {
+      label: "총 현장 수",
+      value: "0",
+      unit: "곳",
+      icon: Building2,
+      color: "text-chart-1",
+    },
+    {
+      label: "총 실외기 대수",
+      value: "0",
+      unit: "대",
+      icon: Wind,
+      color: "text-chart-2",
+    },
+    {
+      label: "월 평균 전력 사용량",
+      value: "0",
+      unit: "kWh",
+      icon: Zap,
+      color: "text-chart-3",
+    },
+    {
+      label: "평균 절감률",
+      value: "0.0",
+      unit: "%",
+      icon: TrendingDown,
+      color: "text-chart-4",
+    },
+  ])
 
   useEffect(() => {
     let baseData = industryBaseData[industry] || industryBaseData.all
 
-    // Try to load from localStorage only on client side
     if (typeof window !== "undefined") {
       try {
         const savedStats = localStorage.getItem("industryStats")
@@ -91,9 +119,7 @@ export function SiteStats({ industry = "all" }: SiteStatsProps) {
       },
     ]
 
-    if (!isEditing) {
-      setStats(calculatedStats)
-    }
+    setStats(calculatedStats)
   }, [industry, isEditing])
 
   const handleEdit = () => {

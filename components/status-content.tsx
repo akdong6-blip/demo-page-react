@@ -78,7 +78,20 @@ export function StatusContent() {
         const savedStats = localStorage.getItem("industryStats")
         if (savedStats) {
           const parsed = JSON.parse(savedStats)
-          setIndustryStats(parsed)
+          const iconMap: Record<string, any> = {
+            초중고: School,
+            대학교: GraduationCap,
+            오피스: Building2,
+            공장: Factory,
+            "상업&문화": ShoppingBag,
+            공공시설: Landmark,
+            숙박시설: Hotel,
+          }
+          const restoredStats = parsed.map((item: any) => ({
+            ...item,
+            icon: iconMap[item.category] || Building2,
+          }))
+          setIndustryStats(restoredStats)
         }
       } catch (e) {
         console.error("Failed to parse industry stats from localStorage", e)
@@ -133,7 +146,8 @@ export function StatusContent() {
     setIndustryStats(editIndustryStats)
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem("industryStats", JSON.stringify(editIndustryStats))
+        const dataToSave = editIndustryStats.map(({ icon, ...rest }) => rest)
+        localStorage.setItem("industryStats", JSON.stringify(dataToSave))
       } catch (e) {
         console.error("Failed to save industry stats to localStorage", e)
       }
