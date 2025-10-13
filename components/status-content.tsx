@@ -73,11 +73,13 @@ export function StatusContent() {
   const [editMonthlyStats, setEditMonthlyStats] = useState(initialMonthlyStats)
 
   useEffect(() => {
-    const savedStats = localStorage.getItem("industryStats")
-    if (savedStats) {
+    if (typeof window !== "undefined") {
       try {
-        const parsed = JSON.parse(savedStats)
-        setIndustryStats(parsed)
+        const savedStats = localStorage.getItem("industryStats")
+        if (savedStats) {
+          const parsed = JSON.parse(savedStats)
+          setIndustryStats(parsed)
+        }
       } catch (e) {
         console.error("Failed to parse industry stats from localStorage", e)
       }
@@ -129,7 +131,13 @@ export function StatusContent() {
 
   const handleSaveIndustry = () => {
     setIndustryStats(editIndustryStats)
-    localStorage.setItem("industryStats", JSON.stringify(editIndustryStats))
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("industryStats", JSON.stringify(editIndustryStats))
+      } catch (e) {
+        console.error("Failed to save industry stats to localStorage", e)
+      }
+    }
     setIsEditingIndustry(false)
   }
 

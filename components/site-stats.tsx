@@ -32,15 +32,16 @@ interface SiteStatsProps {
 export function SiteStats({ industry = "all" }: SiteStatsProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, string>>({})
+  const [stats, setStats] = useState<any[]>([])
 
-  const calculateStats = () => {
+  useEffect(() => {
     let baseData = industryBaseData[industry] || industryBaseData.all
 
-    // Try to load from localStorage
+    // Try to load from localStorage only on client side
     if (typeof window !== "undefined") {
-      const savedStats = localStorage.getItem("industryStats")
-      if (savedStats) {
-        try {
+      try {
+        const savedStats = localStorage.getItem("industryStats")
+        if (savedStats) {
           const parsed = JSON.parse(savedStats)
           const mappedCategory = industryMapping[industry]
           const matchedData = parsed.find((item: any) => item.category === mappedCategory)
@@ -53,13 +54,13 @@ export function SiteStats({ industry = "all" }: SiteStatsProps) {
               savings: baseData.savings,
             }
           }
-        } catch (e) {
-          console.error("Failed to parse industry stats from localStorage", e)
         }
+      } catch (e) {
+        console.error("Failed to parse industry stats from localStorage", e)
       }
     }
 
-    return [
+    const calculatedStats = [
       {
         label: "총 현장 수",
         value: baseData.sites.toLocaleString(),
@@ -89,15 +90,11 @@ export function SiteStats({ industry = "all" }: SiteStatsProps) {
         color: "text-chart-4",
       },
     ]
-  }
 
-  const [stats, setStats] = useState(calculateStats())
-
-  useEffect(() => {
     if (!isEditing) {
-      setStats(calculateStats())
+      setStats(calculatedStats)
     }
-  }, [industry])
+  }, [industry, isEditing])
 
   const handleEdit = () => {
     setIsEditing(true)
