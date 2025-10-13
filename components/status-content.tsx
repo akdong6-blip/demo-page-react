@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -72,6 +72,18 @@ export function StatusContent() {
   const [editIndustryStats, setEditIndustryStats] = useState(initialIndustryStats)
   const [editMonthlyStats, setEditMonthlyStats] = useState(initialMonthlyStats)
 
+  useEffect(() => {
+    const savedStats = localStorage.getItem("industryStats")
+    if (savedStats) {
+      try {
+        const parsed = JSON.parse(savedStats)
+        setIndustryStats(parsed)
+      } catch (e) {
+        console.error("Failed to parse industry stats from localStorage", e)
+      }
+    }
+  }, [])
+
   const handleEditStats = () => {
     setIsEditingStats(true)
     setEditTotalSites(totalSites)
@@ -117,6 +129,7 @@ export function StatusContent() {
 
   const handleSaveIndustry = () => {
     setIndustryStats(editIndustryStats)
+    localStorage.setItem("industryStats", JSON.stringify(editIndustryStats))
     setIsEditingIndustry(false)
   }
 

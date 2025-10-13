@@ -1,30 +1,69 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Pencil, Check, X } from "lucide-react"
 
-interface CostSummaryProps {
-  industry?: string
+const industryCostData: Record<string, { before: number; after: number }> = {
+  all: { before: 4850000, after: 4205000 },
+  industrial: { before: 6200000, after: 5260000 },
+  commercial: { before: 4100000, after: 3575000 },
+  cultural: { before: 3800000, after: 3360000 },
+  university: { before: 5400000, after: 4640000 },
+  office: { before: 4900000, after: 4230000 },
+  school: { before: 3200000, after: 2850000 },
 }
 
-export function CostSummary({ industry = "all" }: CostSummaryProps) {
+interface CostSummaryProps {
+  industry?: string
+  beforeCost?: number
+  afterCost?: number
+}
+
+export function CostSummary({ industry = "all", beforeCost, afterCost }: CostSummaryProps) {
   const [isEditing, setIsEditing] = useState(false)
-  const [beforeCost, setBeforeCost] = useState("4,850,000")
-  const [afterCost, setAfterCost] = useState("4,205,000")
+  const [displayBeforeCost, setDisplayBeforeCost] = useState("")
+  const [displayAfterCost, setDisplayAfterCost] = useState("")
   const [editBeforeCost, setEditBeforeCost] = useState("")
   const [editAfterCost, setEditAfterCost] = useState("")
 
+  const calculateCosts = () => {
+    if (beforeCost && afterCost) {
+      return {
+        before: beforeCost,
+        after: afterCost,
+      }
+    }
+
+    const baseCost = industryCostData[industry] || industryCostData.all
+
+    return {
+      before: baseCost.before,
+      after: baseCost.after,
+    }
+  }
+
+  useEffect(() => {
+    if (!isEditing) {
+      const costs = calculateCosts()
+      setDisplayBeforeCost(costs.before.toLocaleString())
+      setDisplayAfterCost(costs.after.toLocaleString())
+    }
+  }, [industry, beforeCost, afterCost])
+
+  const currentBeforeCost = displayBeforeCost || calculateCosts().before.toLocaleString()
+  const currentAfterCost = displayAfterCost || calculateCosts().after.toLocaleString()
+
   const handleEdit = () => {
     setIsEditing(true)
-    setEditBeforeCost(beforeCost)
-    setEditAfterCost(afterCost)
+    setEditBeforeCost(currentBeforeCost)
+    setEditAfterCost(currentAfterCost)
   }
 
   const handleSave = () => {
-    setBeforeCost(editBeforeCost)
-    setAfterCost(editAfterCost)
+    setDisplayBeforeCost(editBeforeCost)
+    setDisplayAfterCost(editAfterCost)
     setIsEditing(false)
   }
 
@@ -33,8 +72,8 @@ export function CostSummary({ industry = "all" }: CostSummaryProps) {
   }
 
   // Calculate savings
-  const before = Number.parseFloat(beforeCost.replace(/,/g, ""))
-  const after = Number.parseFloat(afterCost.replace(/,/g, ""))
+  const before = Number.parseFloat(currentBeforeCost.replace(/,/g, ""))
+  const after = Number.parseFloat(currentAfterCost.replace(/,/g, ""))
   const savings = before - after
   const savingsPercent = ((savings / before) * 100).toFixed(1)
 
@@ -74,7 +113,7 @@ export function CostSummary({ industry = "all" }: CostSummaryProps) {
                   className="text-3xl font-bold bg-muted px-2 py-1 rounded border border-border w-full"
                 />
               ) : (
-                <div className="text-3xl font-bold">₩{beforeCost}</div>
+                <div className="text-3xl font-bold">₩{currentBeforeCost}</div>
               )}
               <div className="text-sm text-muted-foreground">월 평균</div>
             </div>
@@ -95,7 +134,7 @@ export function CostSummary({ industry = "all" }: CostSummaryProps) {
                   className="text-3xl font-bold bg-muted px-2 py-1 rounded border border-border w-full"
                 />
               ) : (
-                <div className="text-3xl font-bold text-chart-2">₩{afterCost}</div>
+                <div className="text-3xl font-bold text-chart-2">₩{currentAfterCost}</div>
               )}
               <div className="text-sm text-muted-foreground">월 평균</div>
             </div>

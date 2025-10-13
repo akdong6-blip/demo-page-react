@@ -169,7 +169,7 @@ export function ReportContent() {
       <div>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground">에너지 절감 리포트</h2>
         <p className="mt-2 text-sm md:text-base text-muted-foreground">
-          LG전자 입니다. 고객님 현장의 기기에 에너지 로직을 적용하고 에너지 절감 효과를 분석해 결과입니다.
+          LG전자 입니다. 고객님 현장의 기기에 에너지 로직을 적용하고 에너지 절감 효과를 분석한 결과입니다.
         </p>
       </div>
 
