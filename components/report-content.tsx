@@ -103,14 +103,27 @@ const monthlyData = [
   },
 ]
 
-const dailyData = Array.from({ length: 11 }, (_, i) => ({
-  day: i + 1,
-  weekday: ["월", "화", "수", "목", "금", "토", "일"][i % 7],
-  usage: Math.floor(Math.random() * 200) + 400,
-  saved: Math.floor(Math.random() * 100) + 300,
-  rate: (Math.random() * 20 + 20).toFixed(1),
-  cost: Math.floor(Math.random() * 20000) + 40000,
-}))
+const dailyData = Array.from({ length: 31 }, (_, i) => {
+  const beforeControl = Math.floor(Math.random() * 20) + 35 // 비제어시: 35-55
+  const afterControl = Math.floor(Math.random() * 15) + 25 // 제어시: 25-40
+  const savingsRate = (((beforeControl - afterControl) / beforeControl) * 100).toFixed(1)
+
+  return {
+    day: i + 1,
+    weekday: ["월", "화", "수", "목", "금", "토", "일"][i % 7],
+    beforeControl, // 비제어시 에너지
+    afterControl, // 제어시 에너지
+    savingsRate, // 절감율
+    cost: Math.floor(Math.random() * 2000) + 3000,
+    operationRate: (Math.random() * 15 + 25).toFixed(1),
+    coolingHeating: "1.0",
+    operationTime: (Math.random() * 5 + 17).toFixed(1),
+    comfortTemp: (Math.random() * 2 + 22).toFixed(1),
+    indoorTemp: (Math.random() * 2 + 23).toFixed(1),
+    outdoorTemp: (Math.random() * 5 + 27).toFixed(1),
+    humidity: (Math.random() * 30 + 45).toFixed(1),
+  }
+})
 
 const weatherAlerts = [
   {
@@ -456,18 +469,29 @@ export function ReportContent() {
               </Button>
             </div>
 
+            <div className="flex items-center gap-4 mb-4 text-xs md:text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gray-300 rounded" />
+                <span>비제어시</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-teal-500 rounded" />
+                <span>제어시</span>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-xs md:text-sm">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">날짜</th>
                     <th className="text-left p-2">요일</th>
-                    <th className="text-right p-2">에너지 [kWh] / 에너지절감율 [%]</th>
+                    <th className="text-right p-2">에너지 [kWh] / 월절감율 [%]</th>
                     <th className="text-right p-2">사용금액[원]</th>
-                    <th className="text-right p-2">동작률[%]</th>
+                    <th className="text-right p-2">충전율[%]</th>
                     <th className="text-right p-2">냉/난방[h]</th>
                     <th className="text-right p-2">운전시간[h]</th>
-                    <th className="text-right p-2">취침운도[평균]</th>
+                    <th className="text-right p-2">쾌적온도[평균]</th>
                     <th className="text-right p-2">실내온도[평균]</th>
                     <th className="text-right p-2">외기온도[평균]</th>
                     <th className="text-right p-2">습도[평균]</th>
@@ -479,16 +503,27 @@ export function ReportContent() {
                       <td className="p-2">{row.day}</td>
                       <td className="p-2">{row.weekday}</td>
                       <td className="text-right p-2">
-                        <div className="flex items-center gap-2 justify-end">
-                          <div className="w-20 h-4 bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-chart-1" style={{ width: "60%" }} />
-                            <div className="h-full bg-chart-3 -mt-4" style={{ width: "40%" }} />
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-3 bg-muted rounded-full overflow-hidden relative">
+                              <div
+                                className="h-full bg-gray-300 absolute top-0 left-0"
+                                style={{ width: `${(row.beforeControl / 55) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-600">{row.beforeControl}</span>
                           </div>
-                          <span>
-                            {row.usage}/{row.saved}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-3 bg-muted rounded-full overflow-hidden relative">
+                              <div
+                                className="h-full bg-teal-500 absolute top-0 left-0"
+                                style={{ width: `${(row.afterControl / 55) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-teal-600">{row.afterControl}</span>
+                          </div>
+                          <span className="text-xs font-medium">{row.savingsRate}%</span>
                         </div>
-                        <div className="text-xs text-muted-foreground">{row.rate}%</div>
                       </td>
                       <td className="text-right p-2">
                         {editingDaily ? (
@@ -501,13 +536,13 @@ export function ReportContent() {
                           `₩ ${row.cost.toLocaleString()}`
                         )}
                       </td>
-                      <td className="text-right p-2">{(Math.random() * 30 + 20).toFixed(1)}</td>
-                      <td className="text-right p-2">1.0</td>
-                      <td className="text-right p-2">{(Math.random() * 5 + 15).toFixed(1)}</td>
-                      <td className="text-right p-2">{(Math.random() * 3 + 21).toFixed(1)}</td>
-                      <td className="text-right p-2">{(Math.random() * 3 + 24).toFixed(1)}</td>
-                      <td className="text-right p-2">{(Math.random() * 5 + 27).toFixed(1)}</td>
-                      <td className="text-right p-2">{(Math.random() * 30 + 40).toFixed(1)}</td>
+                      <td className="text-right p-2">{row.operationRate}</td>
+                      <td className="text-right p-2">{row.coolingHeating}</td>
+                      <td className="text-right p-2">{row.operationTime}</td>
+                      <td className="text-right p-2">{row.comfortTemp}</td>
+                      <td className="text-right p-2">{row.indoorTemp}</td>
+                      <td className="text-right p-2">{row.outdoorTemp}</td>
+                      <td className="text-right p-2">{row.humidity}</td>
                     </tr>
                   ))}
                 </tbody>
