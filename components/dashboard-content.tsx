@@ -6,6 +6,7 @@ import { SiteStats } from "@/components/site-stats"
 import { CostSummary } from "@/components/cost-summary"
 import { OverlappingPowerChart } from "@/components/charts/overlapping-power-chart"
 import { Button } from "@/components/ui/button"
+import { Check } from "lucide-react"
 
 const industries = [
   { value: "all", label: "전체" },
@@ -31,7 +32,6 @@ const electricityRates = {
 
 export function DashboardContent() {
   const [selectedIndustry, setSelectedIndustry] = useState("all")
-  const [showBaseline, setShowBaseline] = useState(true)
   const [showSavings, setShowSavings] = useState(false)
   const [showComfort, setShowComfort] = useState(false)
   const [showLearning, setShowLearning] = useState(false)
@@ -145,37 +145,44 @@ export function DashboardContent() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle className="text-lg md:text-xl">전력량 사용 비교 분석</CardTitle>
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant={showBaseline ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowBaseline(!showBaseline)}
-                className="text-xs"
-              >
-                제어 전
+              <Button variant="default" size="sm" disabled className="text-xs opacity-100 cursor-default">
+                <span className="flex items-center gap-1.5">
+                  <Check className="w-3 h-3" />
+                  제어 전 (기준선)
+                </span>
               </Button>
               <Button
                 variant={showSavings ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowSavings(!showSavings)}
-                className="text-xs"
+                className="text-xs transition-all duration-300 hover:scale-105"
               >
-                절감 제어
+                <span className="flex items-center gap-1.5">
+                  {showSavings && <Check className="w-3 h-3" />}
+                  절감 제어
+                </span>
               </Button>
               <Button
                 variant={showComfort ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowComfort(!showComfort)}
-                className="text-xs"
+                className="text-xs transition-all duration-300 hover:scale-105"
               >
-                쾌적도 반영
+                <span className="flex items-center gap-1.5">
+                  {showComfort && <Check className="w-3 h-3" />}
+                  쾌적도 반영
+                </span>
               </Button>
               <Button
                 variant={showLearning ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowLearning(!showLearning)}
-                className="text-xs"
+                className="text-xs transition-all duration-300 hover:scale-105"
               >
-                학습 데이터
+                <span className="flex items-center gap-1.5">
+                  {showLearning && <Check className="w-3 h-3" />}
+                  학습 데이터
+                </span>
               </Button>
             </div>
           </div>
@@ -183,7 +190,7 @@ export function DashboardContent() {
         <CardContent>
           <OverlappingPowerChart
             industry={selectedIndustry}
-            showBaseline={showBaseline}
+            showBaseline={true}
             showSavings={showSavings}
             showComfort={showComfort}
             showLearning={showLearning}
@@ -228,10 +235,10 @@ export function DashboardContent() {
                       <td className="text-right p-2">116.2</td>
                     </tr>
                     <tr className="border-b border-border/50">
-                      <td className="p-2">6,900</td>
-                      <td className="text-right p-2">110.4</td>
-                      <td className="text-right p-2">86.9</td>
-                      <td className="text-right p-2">108.6</td>
+                      <td className="text-right p-2">7,470</td>
+                      <td className="text-right p-2">111.5</td>
+                      <td className="text-right p-2">88.0</td>
+                      <td className="text-right p-2">109.7</td>
                     </tr>
                   </tbody>
                 </table>
@@ -269,7 +276,7 @@ export function DashboardContent() {
                       <td className="text-right p-2">130.3</td>
                     </tr>
                     <tr className="border-b border-border/50">
-                      <td className="p-2">8,230</td>
+                      <td className="text-right p-2">8,230</td>
                       <td className="text-right p-2">138.6</td>
                       <td className="text-right p-2">94.3</td>
                       <td className="text-right p-2">125.0</td>
@@ -310,7 +317,7 @@ export function DashboardContent() {
                       <td className="text-right p-2">109.3</td>
                     </tr>
                     <tr className="border-b border-border/50">
-                      <td className="p-2">6,370</td>
+                      <td className="text-right p-2">6,370</td>
                       <td className="text-right p-2">118.8</td>
                       <td className="text-right p-2">82.1</td>
                       <td className="text-right p-2">104.9</td>

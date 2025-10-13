@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 interface OverlappingPowerChartProps {
@@ -68,9 +69,8 @@ export function OverlappingPowerChart({
   showComfort,
   showLearning,
 }: OverlappingPowerChartProps) {
-  const data = generateHourlyData(industry)
+  const data = useMemo(() => generateHourlyData(industry), [industry])
 
-  // 최소 하나는 선택되어야 함
   const hasSelection = showBaseline || showSavings || showComfort || showLearning
 
   return (
@@ -78,7 +78,7 @@ export function OverlappingPowerChart({
       {!hasSelection && <div className="text-center text-muted-foreground py-8">최소 하나의 데이터를 선택해주세요</div>}
       {hasSelection && (
         <>
-          <div className="h-[400px]">
+          <div className="h-[400px] animate-in fade-in duration-500">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -106,7 +106,8 @@ export function OverlappingPowerChart({
                     strokeWidth={2}
                     name="제어 전"
                     dot={false}
-                    animationDuration={800}
+                    animationDuration={1000}
+                    animationEasing="ease-in-out"
                   />
                 )}
 
@@ -118,8 +119,9 @@ export function OverlappingPowerChart({
                     strokeWidth={2}
                     name="절감 제어"
                     dot={false}
-                    animationDuration={800}
+                    animationDuration={1000}
                     animationBegin={200}
+                    animationEasing="ease-in-out"
                   />
                 )}
 
@@ -131,8 +133,9 @@ export function OverlappingPowerChart({
                     strokeWidth={2}
                     name="쾌적도 반영"
                     dot={false}
-                    animationDuration={800}
+                    animationDuration={1000}
                     animationBegin={400}
+                    animationEasing="ease-in-out"
                   />
                 )}
 
@@ -144,18 +147,18 @@ export function OverlappingPowerChart({
                     strokeWidth={2}
                     name="학습 데이터 (1일)"
                     dot={false}
-                    animationDuration={800}
+                    animationDuration={1000}
                     animationBegin={600}
+                    animationEasing="ease-in-out"
                   />
                 )}
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* 통계 요약 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t animate-in fade-in duration-700">
             {showBaseline && (
-              <div className="space-y-1">
+              <div className="space-y-1 animate-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full" />
                   <span className="text-sm font-medium">제어 전</span>
@@ -168,7 +171,7 @@ export function OverlappingPowerChart({
             )}
 
             {showSavings && (
-              <div className="space-y-1">
+              <div className="space-y-1 animate-in slide-in-from-bottom-4 duration-500 delay-100">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-blue-500 rounded-full" />
                   <span className="text-sm font-medium">절감 제어</span>
@@ -182,7 +185,7 @@ export function OverlappingPowerChart({
             )}
 
             {showComfort && (
-              <div className="space-y-1">
+              <div className="space-y-1 animate-in slide-in-from-bottom-4 duration-500 delay-200">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full" />
                   <span className="text-sm font-medium">쾌적도 반영</span>
@@ -193,7 +196,7 @@ export function OverlappingPowerChart({
             )}
 
             {showLearning && (
-              <div className="space-y-1">
+              <div className="space-y-1 animate-in slide-in-from-bottom-4 duration-500 delay-300">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-purple-500 rounded-full" />
                   <span className="text-sm font-medium">학습 데이터</span>

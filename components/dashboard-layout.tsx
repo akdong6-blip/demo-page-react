@@ -86,7 +86,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-start gap-3 relative bg-transparent text-sm lg:text-base"
+                className="w-full justify-start gap-3 relative bg-transparent text-sm lg:text-base text-white hover:text-white"
               >
                 <Bell className="w-4 h-4 lg:w-5 lg:h-5" />
                 <span>에너지 낭비 알림</span>
