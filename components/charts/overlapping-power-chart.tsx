@@ -187,7 +187,7 @@ export function OverlappingPowerChart({
             {showComfort && (
               <div className="space-y-1 animate-in slide-in-from-bottom-4 duration-500 delay-200">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full" />
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full" />
                   <span className="text-sm font-medium">쾌적도 반영</span>
                 </div>
                 <p className="text-2xl font-bold">{Math.round(data.reduce((sum, d) => sum + d.comfort, 0) / 24)} kWh</p>

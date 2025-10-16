@@ -178,7 +178,7 @@ export function StatusContent() {
       <div>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground">더욱 넓어진 에너지 현장</h2>
         <p className="mt-2 text-sm md:text-base text-muted-foreground">
-          전국 {totalSites}개 현장에서 BECONcloud를 사용하고 있습니다
+          전국 {totalSites}개 현장에서 BECON cloud를 사용하고 있습니다
         </p>
       </div>
 

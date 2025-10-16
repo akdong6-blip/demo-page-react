@@ -32,6 +32,7 @@ const electricityRates = {
 
 export function DashboardContent() {
   const [selectedIndustry, setSelectedIndustry] = useState("all")
+  const [showBaseline, setShowBaseline] = useState(true)
   const [showSavings, setShowSavings] = useState(false)
   const [showComfort, setShowComfort] = useState(false)
   const [showLearning, setShowLearning] = useState(false)
@@ -172,17 +173,24 @@ export function DashboardContent() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle className="text-lg md:text-xl">전력량 사용 비교 분석</CardTitle>
             <div className="flex flex-wrap gap-2">
-              <Button variant="default" size="sm" disabled className="text-xs opacity-100 cursor-default">
+              <Button
+                variant="default"
+                size="sm"
+                disabled
+                className="text-xs opacity-100 cursor-default bg-red-500 hover:bg-red-500"
+              >
                 <span className="flex items-center gap-1.5">
                   <Check className="w-3 h-3" />
-                  제어 전 (기준선)
+                  제어 전
                 </span>
               </Button>
               <Button
                 variant={showSavings ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowSavings(!showSavings)}
-                className="text-xs transition-all duration-300 hover:scale-105"
+                className={`text-xs transition-all duration-300 hover:scale-105 ${
+                  showSavings ? "bg-blue-500 hover:bg-blue-600" : "border-blue-500 text-blue-500 hover:bg-blue-50"
+                }`}
               >
                 <span className="flex items-center gap-1.5">
                   {showSavings && <Check className="w-3 h-3" />}
@@ -193,7 +201,11 @@ export function DashboardContent() {
                 variant={showComfort ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowComfort(!showComfort)}
-                className="text-xs transition-all duration-300 hover:scale-105"
+                className={`text-xs transition-all duration-300 hover:scale-105 ${
+                  showComfort
+                    ? "bg-emerald-500 hover:bg-emerald-600"
+                    : "border-emerald-500 text-emerald-500 hover:bg-emerald-50"
+                }`}
               >
                 <span className="flex items-center gap-1.5">
                   {showComfort && <Check className="w-3 h-3" />}
@@ -204,7 +216,11 @@ export function DashboardContent() {
                 variant={showLearning ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowLearning(!showLearning)}
-                className="text-xs transition-all duration-300 hover:scale-105"
+                className={`text-xs transition-all duration-300 hover:scale-105 ${
+                  showLearning
+                    ? "bg-purple-500 hover:bg-purple-600"
+                    : "border-purple-500 text-purple-500 hover:bg-purple-50"
+                }`}
               >
                 <span className="flex items-center gap-1.5">
                   {showLearning && <Check className="w-3 h-3" />}
@@ -217,7 +233,7 @@ export function DashboardContent() {
         <CardContent>
           <OverlappingPowerChart
             industry={selectedIndustry}
-            showBaseline={true}
+            showBaseline={showBaseline}
             showSavings={showSavings}
             showComfort={showComfort}
             showLearning={showLearning}
