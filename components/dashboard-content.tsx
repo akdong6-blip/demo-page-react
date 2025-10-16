@@ -189,7 +189,7 @@ export function DashboardContent() {
                 size="sm"
                 onClick={() => setShowSavings(!showSavings)}
                 className={`text-xs transition-all duration-300 hover:scale-105 ${
-                  showSavings ? "bg-blue-500 hover:bg-blue-600" : "border-blue-500 text-blue-500 hover:bg-blue-50"
+                  showSavings ? "bg-primary hover:bg-primary/90" : "border-primary text-primary hover:bg-primary/10"
                 }`}
               >
                 <span className="flex items-center gap-1.5">

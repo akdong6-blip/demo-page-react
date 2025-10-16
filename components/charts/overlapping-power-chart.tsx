@@ -115,7 +115,7 @@ export function OverlappingPowerChart({
                   <Line
                     type="monotone"
                     dataKey="savings"
-                    stroke="#3b82f6"
+                    stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     name="절감 제어"
                     dot={false}
@@ -173,7 +173,7 @@ export function OverlappingPowerChart({
             {showSavings && (
               <div className="space-y-1 animate-in slide-in-from-bottom-4 duration-500 delay-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                  <div className="w-3 h-3 bg-primary rounded-full" />
                   <span className="text-sm font-medium">절감 제어</span>
                 </div>
                 <p className="text-2xl font-bold">{Math.round(data.reduce((sum, d) => sum + d.savings, 0) / 24)} kWh</p>
