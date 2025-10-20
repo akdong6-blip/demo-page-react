@@ -1,22 +1,24 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { SiteStats } from "@/components/site-stats"
 import { CostSummary } from "@/components/cost-summary"
 import { OverlappingPowerChart } from "@/components/charts/overlapping-power-chart"
 import { Button } from "@/components/ui/button"
 import { Check } from "lucide-react"
-
-const industries = [
-  { value: "all", label: "전체" },
-  { value: "industrial", label: "공업" },
-  { value: "commercial", label: "상업" },
-  { value: "cultural", label: "문화시설" },
-  { value: "university", label: "대학교" },
-  { value: "office", label: "오피스" },
-  { value: "school", label: "초중고" },
-]
+import {
+  loadSiteData,
+  type SiteData,
+  filterByMonth,
+  filterByBusinessType,
+  filterByScale,
+  calculateTotalStats,
+  BUSINESS_TYPES,
+  MONTHS,
+  SCALES,
+} from "@/lib/csv-parser"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 
 const electricityRates = {
   industrial_low: { base: 5550, summer: 107.7, spring: 68.1, winter: 109.7, label: "산업용전력(갑) I - 저압" },
@@ -31,13 +33,59 @@ const electricityRates = {
 }
 
 export function DashboardContent() {
-  const [selectedIndustry, setSelectedIndustry] = useState("all")
   const [showBaseline, setShowBaseline] = useState(true)
   const [showSavings, setShowSavings] = useState(false)
   const [showComfort, setShowComfort] = useState(false)
   const [showLearning, setShowLearning] = useState(false)
   const [selectedRate, setSelectedRate] = useState<keyof typeof electricityRates>("industrial_low")
   const [season, setSeason] = useState<"summer" | "spring" | "winter">("summer")
+  const [allSiteData, setAllSiteData] = useState<SiteData[]>([])
+  const [filteredData, setFilteredData] = useState<SiteData[]>([])
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([])
+  const [selectedBusinessTypes, setSelectedBusinessTypes] = useState<string[]>([])
+  const [selectedScales, setSelectedScales] = useState<string[]>([])
+  const [displayMode, setDisplayMode] = useState<"total" | "average">("total")
+
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await loadSiteData()
+      console.log("[v0] CSV 데이터 로드됨:", data.length, "개 레코드")
+      setAllSiteData(data)
+      setFilteredData(data)
+    }
+    loadData()
+  }, [])
+
+  useEffect(() => {
+    let filtered = allSiteData
+
+    if (selectedMonths.length > 0) {
+      filtered = filterByMonth(filtered, selectedMonths)
+    }
+
+    if (selectedBusinessTypes.length > 0) {
+      filtered = filterByBusinessType(filtered, selectedBusinessTypes)
+    }
+
+    if (selectedScales.length > 0) {
+      filtered = filterByScale(filtered, selectedScales)
+    }
+
+    setFilteredData(filtered)
+    console.log("[v0] 필터 적용됨:", filtered.length, "개 레코드")
+  }, [selectedMonths, selectedBusinessTypes, selectedScales, allSiteData])
+
+  const handleMonthToggle = (month: string) => {
+    setSelectedMonths((prev) => (prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]))
+  }
+
+  const handleBusinessTypeToggle = (type: string) => {
+    setSelectedBusinessTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
+  }
+
+  const handleScaleToggle = (scale: string) => {
+    setSelectedScales((prev) => (prev.includes(scale) ? prev.filter((s) => s !== scale) : [...prev, scale]))
+  }
 
   const calculateCost = (kwh: number) => {
     const rate = electricityRates[selectedRate]
@@ -45,10 +93,12 @@ export function DashboardContent() {
     return Math.round(kwh * energyRate)
   }
 
-  const baselineUsage = 15000
-  const savingsUsage = 12000
-  const savingsAmount = calculateCost(baselineUsage) - calculateCost(savingsUsage)
-  const savingsRate = (((baselineUsage - savingsUsage) / baselineUsage) * 100).toFixed(1)
+  const stats = calculateTotalStats(filteredData)
+  const divisor = displayMode === "average" && selectedMonths.length > 0 ? selectedMonths.length : 1
+
+  const displayBeforeCost = Math.round((stats.totalBeforeCost || 0) / divisor)
+  const displayAfterCost = Math.round((stats.totalAfterCost || 0) / divisor)
+  const displaySavingsRate = stats.avgSavingsRate || 0
 
   const getRateCategory = (rateKey: string) => {
     if (rateKey.startsWith("industrial")) return "industrial"
@@ -63,28 +113,129 @@ export function DashboardContent() {
     <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="text-2xl md:text-3xl font-bold text-foreground">대시보드</h2>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-          <select
-            className="px-3 md:px-4 py-2 bg-card border border-border rounded-lg text-xs md:text-sm font-medium"
-            value={selectedIndustry}
-            onChange={(e) => setSelectedIndustry(e.target.value)}
-          >
-            {industries.map((industry) => (
-              <option key={industry.value} value={industry.value}>
-                {industry.label}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
-      <SiteStats industry={selectedIndustry} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg md:text-xl">필터</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <Label className="text-sm font-semibold mb-3 block">월별 필터 (다중 선택 가능)</Label>
+            <div className="flex flex-wrap gap-2">
+              {MONTHS.map((month) => (
+                <div key={month} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`month-${month}`}
+                    checked={selectedMonths.includes(month)}
+                    onCheckedChange={() => handleMonthToggle(month)}
+                  />
+                  <label
+                    htmlFor={`month-${month}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {month}월
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {selectedMonths.length === 0 ? "전체 데이터 표시 중" : `${selectedMonths.length}개월 선택됨`}
+            </p>
+          </div>
 
-      <CostSummary
-        industry={selectedIndustry}
-        beforeCost={calculateCost(baselineUsage)}
-        afterCost={calculateCost(savingsUsage)}
-      />
+          <div>
+            <Label className="text-sm font-semibold mb-3 block">업태별 필터</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+              {BUSINESS_TYPES.map((type) => (
+                <div key={type} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`type-${type}`}
+                    checked={selectedBusinessTypes.includes(type)}
+                    onCheckedChange={() => handleBusinessTypeToggle(type)}
+                  />
+                  <label
+                    htmlFor={`type-${type}`}
+                    className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {type}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {selectedBusinessTypes.length === 0
+                ? "전체 업태 표시 중"
+                : `${selectedBusinessTypes.length}개 업태 선택됨`}
+            </p>
+          </div>
+
+          <div>
+            <Label className="text-sm font-semibold mb-3 block">규모별 필터</Label>
+            <div className="flex flex-wrap gap-2">
+              {SCALES.map((scale) => (
+                <div key={scale} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`scale-${scale}`}
+                    checked={selectedScales.includes(scale)}
+                    onCheckedChange={() => handleScaleToggle(scale)}
+                  />
+                  <label
+                    htmlFor={`scale-${scale}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {scale}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {selectedScales.length === 0 ? "전체 규모 표시 중" : `${selectedScales.length}개 규모 선택됨`}
+            </p>
+          </div>
+
+          <div>
+            <Label className="text-sm font-semibold mb-3 block">전기요금 표시 방식</Label>
+            <div className="flex gap-2">
+              <Button
+                variant={displayMode === "total" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDisplayMode("total")}
+              >
+                전체
+              </Button>
+              <Button
+                variant={displayMode === "average" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDisplayMode("average")}
+              >
+                월평균
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted rounded-lg">
+            <div>
+              <div className="text-xs text-muted-foreground">총 현장 수</div>
+              <div className="text-xl font-bold">{(stats.totalSites || 0).toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">실내기 대수</div>
+              <div className="text-xl font-bold">{(stats.totalIndoorUnits || 0).toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">절감량</div>
+              <div className="text-xl font-bold">{(stats.totalSavingsAmount || 0).toLocaleString()} kWh</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">평균 절감률</div>
+              <div className="text-xl font-bold">{(stats.avgSavingsRate || 0).toFixed(1)}%</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <CostSummary beforeCost={displayBeforeCost} afterCost={displayAfterCost} savingsRate={displaySavingsRate} />
 
       <Card>
         <CardHeader>
@@ -123,23 +274,35 @@ export function DashboardContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
               <div className="p-3 md:p-4 bg-muted rounded-lg">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1">제어 전 전기요금</div>
+                <div className="text-xs md:text-sm text-muted-foreground mb-1">절감 전 전기요금</div>
                 <div className="text-xl md:text-2xl font-bold text-destructive">
-                  {calculateCost(baselineUsage).toLocaleString()}원
+                  {filteredData.length > 0 ? (filteredData[0].비절감금액 || 0).toLocaleString() : "0"}원
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">{baselineUsage.toLocaleString()} kWh</div>
+                {filteredData.length > 0 && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {(filteredData[0].비절감절감량 || 0).toLocaleString()} kWh
+                  </div>
+                )}
               </div>
               <div className="p-3 md:p-4 bg-muted rounded-lg">
                 <div className="text-xs md:text-sm text-muted-foreground mb-1">절감 후 전기요금</div>
                 <div className="text-xl md:text-2xl font-bold text-primary">
-                  {calculateCost(savingsUsage).toLocaleString()}원
+                  {filteredData.length > 0 ? (filteredData[0].절감금액 || 0).toLocaleString() : "0"}원
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">{savingsUsage.toLocaleString()} kWh</div>
+                {filteredData.length > 0 && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {(filteredData[0].절감사용량 || 0).toLocaleString()} kWh
+                  </div>
+                )}
               </div>
               <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-chart-2">
                 <div className="text-xs md:text-sm text-muted-foreground mb-1">절감 금액</div>
-                <div className="text-xl md:text-2xl font-bold text-chart-2">{savingsAmount.toLocaleString()}원</div>
-                <div className="text-xs text-muted-foreground mt-1">절감률 {savingsRate}%</div>
+                <div className="text-xl md:text-2xl font-bold text-chart-2">
+                  {filteredData.length > 0 ? filteredData[0].절감비용 : "₩0"}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  절감률 {filteredData.length > 0 ? filteredData[0].절감률 : "0%"}%
+                </div>
               </div>
             </div>
 
@@ -232,7 +395,6 @@ export function DashboardContent() {
         </CardHeader>
         <CardContent>
           <OverlappingPowerChart
-            industry={selectedIndustry}
             showBaseline={showBaseline}
             showSavings={showSavings}
             showComfort={showComfort}

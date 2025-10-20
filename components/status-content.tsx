@@ -5,36 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Building2, Factory, School, Hotel, ShoppingBag, Landmark, GraduationCap, Pencil, Check, X } from "lucide-react"
-
-const initialIndustryStats = [
-  { category: "초중고", icon: School, sites: 450, units: 3200 },
-  { category: "대학교", icon: GraduationCap, sites: 280, units: 2400 },
-  { category: "오피스", icon: Building2, sites: 380, units: 2800 },
-  { category: "공장", icon: Factory, sites: 310, units: 4200 },
-  { category: "상업&문화", icon: ShoppingBag, sites: 270, units: 2620 },
-  { category: "공공시설", icon: Landmark, sites: 180, units: 1800 },
-  { category: "숙박시설", icon: Hotel, sites: 160, units: 1400 },
-]
-
-const initialRegionalData = [
-  { region: "서울", sites: 340, percentage: 18.6 },
-  { region: "경기", sites: 420, percentage: 23.0 },
-  { region: "인천", sites: 120, percentage: 6.6 },
-  { region: "강원", sites: 80, percentage: 4.4 },
-  { region: "충북", sites: 90, percentage: 4.9 },
-  { region: "충남", sites: 110, percentage: 6.0 },
-  { region: "대전", sites: 85, percentage: 4.6 },
-  { region: "세종", sites: 45, percentage: 2.5 },
-  { region: "전북", sites: 95, percentage: 5.2 },
-  { region: "전남", sites: 105, percentage: 5.7 },
-  { region: "광주", sites: 75, percentage: 4.1 },
-  { region: "경북", sites: 115, percentage: 6.3 },
-  { region: "경남", sites: 130, percentage: 7.1 },
-  { region: "대구", sites: 90, percentage: 4.9 },
-  { region: "울산", sites: 60, percentage: 3.3 },
-  { region: "부산", sites: 100, percentage: 5.5 },
-  { region: "제주", sites: 50, percentage: 2.7 },
-]
+import { loadSiteData, groupByRegion, calculateTotalStats, type SiteData } from "@/lib/csv-parser"
 
 const initialMonthlyStats = [
   { category: "설치현장", jan: 14, feb: 15, mar: 18, apr: 21, may: 23, jun: 28, avg: 19.8 },
@@ -46,118 +17,50 @@ const initialMonthlyStats = [
 ]
 
 export function StatusContent() {
-  const [isEditingStats, setIsEditingStats] = useState(false)
-  const [isEditingRegional, setIsEditingRegional] = useState(false)
-  const [isEditingIndustry, setIsEditingIndustry] = useState(false)
   const [isEditingMonthly, setIsEditingMonthly] = useState(false)
-
-  const [totalSites, setTotalSites] = useState("1,830")
-  const [contractSites, setContractSites] = useState("310")
-  const [trialSites, setTrialSites] = useState("100")
-  const [totalUnits, setTotalUnits] = useState("15,420")
-  const [savingsRate, setSavingsRate] = useState("13.3")
-  const [savingsAmount, setSavingsAmount] = useState("10,000,000,000")
-
-  const [regionalData, setRegionalData] = useState(initialRegionalData)
-  const [industryStats, setIndustryStats] = useState(initialIndustryStats)
+  const [siteData, setSiteData] = useState<SiteData[]>([])
+  const [regionalData, setRegionalData] = useState<Array<{ region: string; sites: number; percentage: number }>>([])
+  const [industryData, setIndustryData] = useState<Array<{ category: string; sites: number; units: number }>>([])
   const [monthlyStats, setMonthlyStats] = useState(initialMonthlyStats)
-
-  const [editTotalSites, setEditTotalSites] = useState("")
-  const [editContractSites, setEditContractSites] = useState("")
-  const [editTrialSites, setEditTrialSites] = useState("")
-  const [editTotalUnits, setEditTotalUnits] = useState("")
-  const [editSavingsRate, setEditSavingsRate] = useState("")
-  const [editSavingsAmount, setEditSavingsAmount] = useState("")
-  const [editRegionalData, setEditRegionalData] = useState(initialRegionalData)
-  const [editIndustryStats, setEditIndustryStats] = useState(initialIndustryStats)
   const [editMonthlyStats, setEditMonthlyStats] = useState(initialMonthlyStats)
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedStats = localStorage.getItem("industryStats")
-        if (savedStats) {
-          const parsed = JSON.parse(savedStats)
-          const iconMap: Record<string, any> = {
-            초중고: School,
-            대학교: GraduationCap,
-            오피스: Building2,
-            공장: Factory,
-            "상업&문화": ShoppingBag,
-            공공시설: Landmark,
-            숙박시설: Hotel,
-          }
-          const restoredStats = parsed.map((item: any) => ({
-            ...item,
-            icon: iconMap[item.category] || Building2,
-          }))
-          setIndustryStats(restoredStats)
+    const loadData = async () => {
+      const data = await loadSiteData()
+      console.log("[v0] 현황 페이지 CSV 데이터 로드됨:", data.length, "개 현장")
+      setSiteData(data)
+
+      // Calculate regional data
+      const regionMap = groupByRegion(data)
+      const totalSites = data.length
+      const regional = Array.from(regionMap.entries()).map(([region, sites]) => ({
+        region,
+        sites: sites.length,
+        percentage: (sites.length / totalSites) * 100,
+      }))
+      setRegionalData(regional)
+
+      // Calculate industry data
+      const industryMap = new Map<string, SiteData[]>()
+      data.forEach((site) => {
+        const industry = site.업태
+        if (!industryMap.has(industry)) {
+          industryMap.set(industry, [])
         }
-      } catch (e) {
-        console.error("Failed to parse industry stats from localStorage", e)
-      }
+        industryMap.get(industry)!.push(site)
+      })
+
+      const industry = Array.from(industryMap.entries()).map(([category, sites]) => ({
+        category,
+        sites: sites.length,
+        units: sites.reduce((sum, site) => sum + site.실내기대수, 0),
+      }))
+      setIndustryData(industry)
     }
+    loadData()
   }, [])
 
-  const handleEditStats = () => {
-    setIsEditingStats(true)
-    setEditTotalSites(totalSites)
-    setEditContractSites(contractSites)
-    setEditTrialSites(trialSites)
-    setEditTotalUnits(totalUnits)
-    setEditSavingsRate(savingsRate)
-    setEditSavingsAmount(savingsAmount)
-  }
-
-  const handleSaveStats = () => {
-    setTotalSites(editTotalSites)
-    setContractSites(editContractSites)
-    setTrialSites(editTrialSites)
-    setTotalUnits(editTotalUnits)
-    setSavingsRate(editSavingsRate)
-    setSavingsAmount(editSavingsAmount)
-    setIsEditingStats(false)
-  }
-
-  const handleCancelStats = () => {
-    setIsEditingStats(false)
-  }
-
-  const handleEditRegional = () => {
-    setIsEditingRegional(true)
-    setEditRegionalData([...regionalData])
-  }
-
-  const handleSaveRegional = () => {
-    setRegionalData(editRegionalData)
-    setIsEditingRegional(false)
-  }
-
-  const handleCancelRegional = () => {
-    setIsEditingRegional(false)
-  }
-
-  const handleEditIndustry = () => {
-    setIsEditingIndustry(true)
-    setEditIndustryStats([...industryStats])
-  }
-
-  const handleSaveIndustry = () => {
-    setIndustryStats(editIndustryStats)
-    if (typeof window !== "undefined") {
-      try {
-        const dataToSave = editIndustryStats.map(({ icon, ...rest }) => rest)
-        localStorage.setItem("industryStats", JSON.stringify(dataToSave))
-      } catch (e) {
-        console.error("Failed to save industry stats to localStorage", e)
-      }
-    }
-    setIsEditingIndustry(false)
-  }
-
-  const handleCancelIndustry = () => {
-    setIsEditingIndustry(false)
-  }
+  const stats = calculateTotalStats(siteData)
 
   const handleEditMonthly = () => {
     setIsEditingMonthly(true)
@@ -173,216 +76,94 @@ export function StatusContent() {
     setIsEditingMonthly(false)
   }
 
+  const getIndustryIcon = (category: string) => {
+    if (category.includes("초중고")) return School
+    if (category.includes("대학교")) return GraduationCap
+    if (category.includes("오피스") || category.includes("빌딩")) return Building2
+    if (category.includes("공장")) return Factory
+    if (category.includes("상업") || category.includes("문화") || category.includes("상가")) return ShoppingBag
+    if (category.includes("공공") || category.includes("종교")) return Landmark
+    if (category.includes("숙박") || category.includes("호텔")) return Hotel
+    return Building2
+  }
+
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       <div>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground">더욱 넓어진 에너지 현장</h2>
         <p className="mt-2 text-sm md:text-base text-muted-foreground">
-          전국 {totalSites}개 현장에서 BECON cloud를 사용하고 있습니다
+          전국 {stats.totalSites.toLocaleString()}개 현장에서 BECON cloud를 사용하고 있습니다
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex justify-end">
-          {!isEditingStats ? (
-            <Button onClick={handleEditStats} variant="outline" size="sm" className="text-xs md:text-sm bg-transparent">
-              <Pencil className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-              수정
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button onClick={handleSaveStats} size="sm" className="text-xs md:text-sm">
-                <Check className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-                저장
-              </Button>
-              <Button
-                onClick={handleCancelStats}
-                variant="outline"
-                size="sm"
-                className="text-xs md:text-sm bg-transparent"
-              >
-                <X className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-                취소
-              </Button>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-muted-foreground">총 현장 수</div>
+            <div className="mt-2 text-3xl font-bold text-primary">{stats.totalSites}</div>
+            <div className="text-sm text-muted-foreground">site</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-muted-foreground">실내기 대수</div>
+            <div className="mt-2 text-3xl font-bold text-chart-2">{stats.totalIndoorUnits.toLocaleString()}</div>
+            <div className="text-sm text-muted-foreground">대</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-muted-foreground">절감량</div>
+            <div className="mt-2 text-3xl font-bold text-chart-5">{stats.totalSavingsAmount.toLocaleString()}</div>
+            <div className="text-sm text-muted-foreground">kWh</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-muted-foreground">절감 금액</div>
+            <div className="mt-2 text-3xl font-bold text-chart-3">{stats.totalSavingsCost.toLocaleString()}</div>
+            <div className="text-sm text-muted-foreground">원</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-muted-foreground">평균 절감률</div>
+            <div className="mt-2 text-3xl font-bold text-chart-4">{stats.avgSavingsRate.toFixed(1)}</div>
+            <div className="text-sm text-muted-foreground">%</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-muted-foreground">탄소배출 절감</div>
+            <div className="mt-2 text-3xl font-bold text-chart-1">
+              {siteData.reduce((sum, site) => sum + site.탄소배출량, 0).toLocaleString()}
             </div>
-          )}
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground">설치현장</div>
-              {isEditingStats ? (
-                <Input
-                  type="text"
-                  value={editTotalSites}
-                  onChange={(e) => setEditTotalSites(e.target.value)}
-                  className="mt-2 text-3xl font-bold text-primary h-auto"
-                />
-              ) : (
-                <div className="mt-2 text-3xl font-bold text-primary">{totalSites}</div>
-              )}
-              <div className="text-sm text-muted-foreground">site</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground">계약현장</div>
-              {isEditingStats ? (
-                <Input
-                  type="text"
-                  value={editContractSites}
-                  onChange={(e) => setEditContractSites(e.target.value)}
-                  className="mt-2 text-3xl font-bold text-chart-2 h-auto"
-                />
-              ) : (
-                <div className="mt-2 text-3xl font-bold text-chart-2">{contractSites}</div>
-              )}
-              <div className="text-sm text-muted-foreground">site</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground">체험 현장</div>
-              {isEditingStats ? (
-                <Input
-                  type="text"
-                  value={editTrialSites}
-                  onChange={(e) => setEditTrialSites(e.target.value)}
-                  className="mt-2 text-3xl font-bold text-chart-5 h-auto"
-                />
-              ) : (
-                <div className="mt-2 text-3xl font-bold text-chart-5">{trialSites}</div>
-              )}
-              <div className="text-sm text-muted-foreground">site</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground">총 실외기</div>
-              {isEditingStats ? (
-                <Input
-                  type="text"
-                  value={editTotalUnits}
-                  onChange={(e) => setEditTotalUnits(e.target.value)}
-                  className="mt-2 text-3xl font-bold text-chart-3 h-auto"
-                />
-              ) : (
-                <div className="mt-2 text-3xl font-bold text-chart-3">{totalUnits}</div>
-              )}
-              <div className="text-sm text-muted-foreground">대</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground">절감률</div>
-              {isEditingStats ? (
-                <Input
-                  type="text"
-                  value={editSavingsRate}
-                  onChange={(e) => setEditSavingsRate(e.target.value)}
-                  className="mt-2 text-3xl font-bold text-chart-4 h-auto"
-                />
-              ) : (
-                <div className="mt-2 text-3xl font-bold text-chart-4">{savingsRate}</div>
-              )}
-              <div className="text-sm text-muted-foreground">%</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground">절감금액</div>
-              {isEditingStats ? (
-                <Input
-                  type="text"
-                  value={editSavingsAmount}
-                  onChange={(e) => setEditSavingsAmount(e.target.value)}
-                  className="mt-2 text-xl font-bold text-chart-1 h-auto"
-                />
-              ) : (
-                <div className="mt-2 text-xl font-bold text-chart-1 break-all">{savingsAmount}</div>
-              )}
-              <div className="text-sm text-muted-foreground">원</div>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="text-sm text-muted-foreground">kg</div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg md:text-xl">지역별 현황</CardTitle>
-            {!isEditingRegional ? (
-              <Button
-                onClick={handleEditRegional}
-                variant="outline"
-                size="sm"
-                className="text-xs md:text-sm bg-transparent"
-              >
-                <Pencil className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-                수정
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button onClick={handleSaveRegional} size="sm" className="text-xs md:text-sm">
-                  <Check className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-                  저장
-                </Button>
-                <Button
-                  onClick={handleCancelRegional}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs md:text-sm bg-transparent"
-                >
-                  <X className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-                  취소
-                </Button>
-              </div>
-            )}
-          </div>
+          <CardTitle className="text-lg md:text-xl">지역별 현황</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
-            {(isEditingRegional ? editRegionalData : regionalData).map((data, index) => (
+            {regionalData.map((data) => (
               <div key={data.region} className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 rounded-full bg-primary" />
                   <span className="font-medium">{data.region}</span>
                 </div>
-                {isEditingRegional ? (
-                  <div className="space-y-2">
-                    <Input
-                      type="number"
-                      value={editRegionalData[index].sites}
-                      onChange={(e) => {
-                        const newData = [...editRegionalData]
-                        newData[index].sites = Number.parseInt(e.target.value) || 0
-                        setEditRegionalData(newData)
-                      }}
-                      className="h-8"
-                    />
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={editRegionalData[index].percentage}
-                      onChange={(e) => {
-                        const newData = [...editRegionalData]
-                        newData[index].percentage = Number.parseFloat(e.target.value) || 0
-                        setEditRegionalData(newData)
-                      }}
-                      className="h-8"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <div className="font-bold text-lg">{data.sites} site</div>
-                    <div className="text-sm text-muted-foreground">{data.percentage}%</div>
-                  </div>
-                )}
+                <div>
+                  <div className="font-bold text-lg">{data.sites} site</div>
+                  <div className="text-sm text-muted-foreground">{data.percentage.toFixed(1)}%</div>
+                </div>
               </div>
             ))}
           </div>
@@ -391,90 +172,33 @@ export function StatusContent() {
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg md:text-xl">업종별 현황</CardTitle>
-            {!isEditingIndustry ? (
-              <Button
-                onClick={handleEditIndustry}
-                variant="outline"
-                size="sm"
-                className="text-xs md:text-sm bg-transparent"
-              >
-                <Pencil className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-                수정
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button onClick={handleSaveIndustry} size="sm" className="text-xs md:text-sm">
-                  <Check className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-                  저장
-                </Button>
-                <Button
-                  onClick={handleCancelIndustry}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs md:text-sm bg-transparent"
-                >
-                  <X className="w-3 h-3 md:w-4 md:h-4 mr-2" />
-                  취소
-                </Button>
-              </div>
-            )}
-          </div>
+          <CardTitle className="text-lg md:text-xl">업태별 현황</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-            {(isEditingIndustry ? editIndustryStats : industryStats).map((stat, index) => (
-              <div key={stat.category} className="p-6 bg-muted/50 rounded-lg space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <stat.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <h4 className="font-bold text-lg">{stat.category}</h4>
-                </div>
-                {isEditingIndustry ? (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-xs text-muted-foreground">현장</label>
-                      <Input
-                        type="number"
-                        value={editIndustryStats[index].sites}
-                        onChange={(e) => {
-                          const newData = [...editIndustryStats]
-                          newData[index].sites = Number.parseInt(e.target.value) || 0
-                          setEditIndustryStats(newData)
-                        }}
-                        className="h-8"
-                      />
+            {industryData.map((stat) => {
+              const Icon = getIndustryIcon(stat.category)
+              return (
+                <div key={stat.category} className="p-6 bg-muted/50 rounded-lg space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-primary" />
                     </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">실외기</label>
-                      <Input
-                        type="number"
-                        value={editIndustryStats[index].units}
-                        onChange={(e) => {
-                          const newData = [...editIndustryStats]
-                          newData[index].units = Number.parseInt(e.target.value) || 0
-                          setEditIndustryStats(newData)
-                        }}
-                        className="h-8"
-                      />
-                    </div>
+                    <h4 className="font-bold text-lg">{stat.category}</h4>
                   </div>
-                ) : (
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">현장</span>
                       <span className="font-semibold">{stat.sites} site</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">실외기</span>
+                      <span className="text-muted-foreground">실내기</span>
                       <span className="font-semibold">{stat.units}대</span>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
