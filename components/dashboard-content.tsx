@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CostSummary } from "@/components/cost-summary"
 import { OverlappingPowerChart } from "@/components/charts/overlapping-power-chart"
 import { Button } from "@/components/ui/button"
-import { Check } from "lucide-react"
+import { Check, ChevronDown } from "lucide-react"
 import {
   loadSiteData,
   type SiteData,
@@ -19,6 +18,7 @@ import {
 } from "@/lib/csv-parser"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 const electricityRates = {
   industrial_low: { base: 5550, summer: 107.7, spring: 68.1, winter: 109.7, label: "산업용전력(갑) I - 저압" },
@@ -45,6 +45,9 @@ export function DashboardContent() {
   const [selectedBusinessTypes, setSelectedBusinessTypes] = useState<string[]>([])
   const [selectedScales, setSelectedScales] = useState<string[]>([])
   const [displayMode, setDisplayMode] = useState<"total" | "average">("total")
+  const [isMonthOpen, setIsMonthOpen] = useState(false)
+  const [isBusinessTypeOpen, setIsBusinessTypeOpen] = useState(false)
+  const [isScaleOpen, setIsScaleOpen] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -87,6 +90,18 @@ export function DashboardContent() {
     setSelectedScales((prev) => (prev.includes(scale) ? prev.filter((s) => s !== scale) : [...prev, scale]))
   }
 
+  const handleResetMonths = () => {
+    setSelectedMonths([])
+  }
+
+  const handleResetBusinessTypes = () => {
+    setSelectedBusinessTypes([])
+  }
+
+  const handleResetScales = () => {
+    setSelectedScales([])
+  }
+
   const calculateCost = (kwh: number) => {
     const rate = electricityRates[selectedRate]
     const energyRate = rate[season]
@@ -94,7 +109,7 @@ export function DashboardContent() {
   }
 
   const stats = calculateTotalStats(filteredData)
-  const divisor = displayMode === "average" && selectedMonths.length > 0 ? selectedMonths.length : 1
+  const divisor = displayMode === "average" && stats.recordCount > 0 ? stats.recordCount : 1
 
   const displayBeforeCost = Math.round((stats.totalBeforeCost || 0) / divisor)
   const displayAfterCost = Math.round((stats.totalAfterCost || 0) / divisor)
@@ -112,134 +127,234 @@ export function DashboardContent() {
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground">대시보드</h2>
+        <h2 className="text-2xl md:text-3xl font-lg-bold text-foreground">대시보드</h2>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg md:text-xl">필터</CardTitle>
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-lg-bold">검색 조건</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedMonths([])
+                setSelectedBusinessTypes([])
+                setSelectedScales([])
+              }}
+              className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
+            >
+              전체 초기화
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <Label className="text-sm font-semibold mb-3 block">월별 필터 (다중 선택 가능)</Label>
-            <div className="flex flex-wrap gap-2">
-              {MONTHS.map((month) => (
-                <div key={month} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`month-${month}`}
-                    checked={selectedMonths.includes(month)}
-                    onCheckedChange={() => handleMonthToggle(month)}
-                  />
-                  <label
-                    htmlFor={`month-${month}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {month}월
-                  </label>
+        <CardContent className="space-y-2 pt-0">
+          {/* 월별 필터 */}
+          <Collapsible open={isMonthOpen} onOpenChange={setIsMonthOpen}>
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+              <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="font-lg-bold text-sm">월별</span>
+                  <span className="text-xs text-muted-foreground font-lg-regular">
+                    {selectedMonths.length === 0 ? "(전체 데이터)" : `(${selectedMonths.length}개 선택됨)`}
+                  </span>
                 </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {selectedMonths.length === 0 ? "전체 데이터 표시 중" : `${selectedMonths.length}개월 선택됨`}
-            </p>
-          </div>
-
-          <div>
-            <Label className="text-sm font-semibold mb-3 block">업태별 필터</Label>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {BUSINESS_TYPES.map((type) => (
-                <div key={type} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`type-${type}`}
-                    checked={selectedBusinessTypes.includes(type)}
-                    onCheckedChange={() => handleBusinessTypeToggle(type)}
-                  />
-                  <label
-                    htmlFor={`type-${type}`}
-                    className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {type}
-                  </label>
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${isMonthOpen ? "rotate-180" : ""}`}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="px-4 py-3 border-t border-gray-200 bg-muted/30">
+                  <div className="flex flex-wrap gap-2">
+                    {MONTHS.map((month) => (
+                      <label
+                        key={month}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-all ${
+                          selectedMonths.includes(month)
+                            ? "bg-[#8B1538] text-white border-[#8B1538]"
+                            : "bg-white border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <Checkbox
+                          id={`month-${month}`}
+                          checked={selectedMonths.includes(month)}
+                          onCheckedChange={() => handleMonthToggle(month)}
+                          className="hidden"
+                        />
+                        <span className="text-sm font-lg-regular">{month}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              </CollapsibleContent>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {selectedBusinessTypes.length === 0
-                ? "전체 업태 표시 중"
-                : `${selectedBusinessTypes.length}개 업태 선택됨`}
-            </p>
-          </div>
+          </Collapsible>
 
-          <div>
-            <Label className="text-sm font-semibold mb-3 block">규모별 필터</Label>
-            <div className="flex flex-wrap gap-2">
-              {SCALES.map((scale) => (
-                <div key={scale} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`scale-${scale}`}
-                    checked={selectedScales.includes(scale)}
-                    onCheckedChange={() => handleScaleToggle(scale)}
-                  />
-                  <label
-                    htmlFor={`scale-${scale}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {scale}
-                  </label>
+          {/* 업태별 필터 */}
+          <Collapsible open={isBusinessTypeOpen} onOpenChange={setIsBusinessTypeOpen}>
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+              <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="font-lg-bold text-sm">업태별</span>
+                  <span className="text-xs text-muted-foreground font-lg-regular">
+                    {selectedBusinessTypes.length === 0
+                      ? "(전체 데이터)"
+                      : `(${selectedBusinessTypes.length}개 선택됨)`}
+                  </span>
                 </div>
-              ))}
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${isBusinessTypeOpen ? "rotate-180" : ""}`}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="px-4 py-3 border-t border-gray-200 bg-muted/30">
+                  <div className="flex flex-wrap gap-2">
+                    {BUSINESS_TYPES.map((type) => (
+                      <label
+                        key={type}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-all ${
+                          selectedBusinessTypes.includes(type)
+                            ? "bg-[#8B1538] text-white border-[#8B1538]"
+                            : "bg-white border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <Checkbox
+                          id={`type-${type}`}
+                          checked={selectedBusinessTypes.includes(type)}
+                          onCheckedChange={() => handleBusinessTypeToggle(type)}
+                          className="hidden"
+                        />
+                        <span className="text-sm font-lg-regular">{type}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleContent>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {selectedScales.length === 0 ? "전체 규모 표시 중" : `${selectedScales.length}개 규모 선택됨`}
-            </p>
-          </div>
+          </Collapsible>
 
-          <div>
-            <Label className="text-sm font-semibold mb-3 block">전기요금 표시 방식</Label>
-            <div className="flex gap-2">
-              <Button
-                variant={displayMode === "total" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setDisplayMode("total")}
-              >
-                전체
-              </Button>
-              <Button
-                variant={displayMode === "average" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setDisplayMode("average")}
-              >
-                월평균
-              </Button>
+          {/* 규모별 필터 */}
+          <Collapsible open={isScaleOpen} onOpenChange={setIsScaleOpen}>
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+              <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="font-lg-bold text-sm">규모별</span>
+                  <span className="text-xs text-muted-foreground font-lg-regular">
+                    {selectedScales.length === 0 ? "(전체 데이터)" : `(${selectedScales.length}개 선택됨)`}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${isScaleOpen ? "rotate-180" : ""}`}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="px-4 py-3 border-t border-gray-200 bg-muted/30">
+                  <div className="flex flex-wrap gap-2">
+                    {SCALES.map((scale) => (
+                      <label
+                        key={scale}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-all ${
+                          selectedScales.includes(scale)
+                            ? "bg-[#8B1538] text-white border-[#8B1538]"
+                            : "bg-white border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <Checkbox
+                          id={`scale-${scale}`}
+                          checked={selectedScales.includes(scale)}
+                          onCheckedChange={() => handleScaleToggle(scale)}
+                          className="hidden"
+                        />
+                        <span className="text-sm font-lg-regular">{scale}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleContent>
             </div>
-          </div>
+          </Collapsible>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted rounded-lg">
+          {/* 통계 요약 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200 mt-4">
             <div>
-              <div className="text-xs text-muted-foreground">총 현장 수</div>
-              <div className="text-xl font-bold">{(stats.totalSites || 0).toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground mb-1 font-lg-regular">총 현장 수</div>
+              <div className="text-xl font-lg-bold">{(stats.totalSites || 0).toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">실내기 대수</div>
-              <div className="text-xl font-bold">{(stats.totalIndoorUnits || 0).toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground mb-1 font-lg-regular">실내기 대수</div>
+              <div className="text-xl font-lg-bold">{(stats.totalIndoorUnits || 0).toLocaleString()}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">절감량</div>
-              <div className="text-xl font-bold">{(stats.totalSavingsAmount || 0).toLocaleString()} kWh</div>
+              <div className="text-xs text-muted-foreground mb-1 font-lg-regular">절감량</div>
+              <div className="text-xl font-lg-bold">{(stats.totalSavingsAmount || 0).toLocaleString()} kWh</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">평균 절감률</div>
-              <div className="text-xl font-bold">{(stats.avgSavingsRate || 0).toFixed(1)}%</div>
+              <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감률</div>
+              <div className="text-xl font-lg-bold">{(stats.avgSavingsRate || 0).toFixed(1)}%</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <CostSummary beforeCost={displayBeforeCost} afterCost={displayAfterCost} savingsRate={displaySavingsRate} />
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-lg-bold">전기요금 표시 방식</Label>
+          <div className="flex gap-2">
+            <Button
+              variant={displayMode === "total" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDisplayMode("total")}
+              className={`h-8 px-4 ${displayMode === "total" ? "bg-[#8B1538] hover:bg-[#8B1538]/90" : "border-gray-200 hover:bg-muted"}`}
+            >
+              전체
+            </Button>
+            <Button
+              variant={displayMode === "average" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDisplayMode("average")}
+              className={`h-8 px-4 ${displayMode === "average" ? "bg-[#8B1538] hover:bg-[#8B1538]/90" : "border-gray-200 hover:bg-muted"}`}
+            >
+              월평균
+            </Button>
+          </div>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg md:text-xl">전기요금 계산기</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="border-2 border-gray-200">
+            <CardContent className="p-6">
+              <div className="text-sm text-muted-foreground mb-2 font-lg-regular">절감 전 전기요금</div>
+              <div className="text-3xl font-lg-bold text-destructive">₩{displayBeforeCost.toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground mt-2 font-lg-regular">
+                {displayMode === "average" ? "월 평균" : "전체 합계"}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-2 border-gray-200">
+            <CardContent className="p-6">
+              <div className="text-sm text-muted-foreground mb-2 font-lg-regular">절감 후 전기요금</div>
+              <div className="text-3xl font-lg-bold text-primary">₩{displayAfterCost.toLocaleString()}</div>
+              <div className="text-xs text-muted-foreground mt-2 font-lg-regular">
+                {displayMode === "average" ? "월 평균" : "전체 합계"}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-2 border-gray-200">
+            <CardContent className="p-6">
+              <div className="text-sm text-muted-foreground mb-2 font-lg-regular">총 절감 금액</div>
+              <div className="text-3xl font-lg-bold text-chart-2">
+                ₩{Math.round((stats.totalSavingsCost || 0) / divisor).toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground mt-2 font-lg-regular">
+                {displaySavingsRate.toFixed(1)}% 절감
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10">
+          <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금 계산기</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -276,33 +391,25 @@ export function DashboardContent() {
               <div className="p-3 md:p-4 bg-muted rounded-lg">
                 <div className="text-xs md:text-sm text-muted-foreground mb-1">절감 전 전기요금</div>
                 <div className="text-xl md:text-2xl font-bold text-destructive">
-                  {filteredData.length > 0 ? (filteredData[0].비절감금액 || 0).toLocaleString() : "0"}원
+                  ₩{displayBeforeCost.toLocaleString()}
                 </div>
-                {filteredData.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {(filteredData[0].비절감절감량 || 0).toLocaleString()} kWh
-                  </div>
-                )}
+                <div className="text-xs text-muted-foreground mt-1">
+                  {Math.round((stats.totalBeforePower || 0) / divisor).toLocaleString()} kWh
+                </div>
               </div>
               <div className="p-3 md:p-4 bg-muted rounded-lg">
                 <div className="text-xs md:text-sm text-muted-foreground mb-1">절감 후 전기요금</div>
-                <div className="text-xl md:text-2xl font-bold text-primary">
-                  {filteredData.length > 0 ? (filteredData[0].절감금액 || 0).toLocaleString() : "0"}원
-                </div>
-                {filteredData.length > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {(filteredData[0].절감사용량 || 0).toLocaleString()} kWh
-                  </div>
-                )}
-              </div>
-              <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-chart-2">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1">절감 금액</div>
-                <div className="text-xl md:text-2xl font-bold text-chart-2">
-                  {filteredData.length > 0 ? filteredData[0].절감비용 : "₩0"}
-                </div>
+                <div className="text-xl md:text-2xl font-bold text-primary">₩{displayAfterCost.toLocaleString()}</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  절감률 {filteredData.length > 0 ? filteredData[0].절감률 : "0%"}%
+                  {Math.round((stats.totalAfterPower || 0) / divisor).toLocaleString()} kWh
                 </div>
+              </div>
+              <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-gray-200">
+                <div className="text-xs md:text-sm text-muted-foreground mb-1">총 절감 금액</div>
+                <div className="text-xl md:text-2xl font-bold text-chart-2">
+                  ₩{Math.round((stats.totalSavingsCost || 0) / divisor).toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">절감률 {displaySavingsRate.toFixed(1)}%</div>
               </div>
             </div>
 
@@ -331,10 +438,10 @@ export function DashboardContent() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-gray-200 shadow-sm">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle className="text-lg md:text-xl">전력량 사용 비교 분석</CardTitle>
+            <CardTitle className="text-lg md:text-xl font-lg-bold">전력량 사용 비교 분석</CardTitle>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="default"
@@ -403,9 +510,9 @@ export function DashboardContent() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-gray-200 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl">전기요금표</CardTitle>
+          <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금표</CardTitle>
           <p className="text-xs md:text-sm text-muted-foreground mt-1">
             {selectedCategory === "industrial" && "산업용전력(갑) I 요금제가 선택되었습니다"}
             {selectedCategory === "general" && "일반용전력(갑) I 요금제가 선택되었습니다"}

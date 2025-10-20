@@ -7,26 +7,26 @@ export interface SiteData {
   절감량: number
   절감금액: number
   비절감금액: number
-  절감비용: string // Changed to string (e.g., "₩134,430")
-  월: string // Changed to string (e.g., "3월")
+  절감비용: string
+  월: string
   연: number
-  현장구분: string // This is the "규모" (대형, 중형, 중소형, 소형)
+  현장구분: string
   업태: string
   실내기대수: number
   구분: string
-  절감률: string // Changed to string (e.g., "7.80%")
+  절감률: string
   지역: string
   한전요금: string
-  탄소배출량: string // Changed to string
+  탄소배출량: string
 }
+
+const CSV_URL =
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/sites%20_%EC%A7%80%EC%97%AD%EB%AA%85%ED%86%B5%EC%9D%BC-mZ6vACXTfhwAAv5mKF4p6fdFR3kvOF.csv"
 
 export async function loadSiteData(): Promise<SiteData[]> {
   try {
-    const response = await fetch(
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%EC%A0%88%EA%B0%90%20%EB%8D%B0%EC%9D%B4%ED%84%B0-MlcAuK152SH4dmod3jZ8E0Y5ZVokj0.csv",
-    )
+    const response = await fetch(CSV_URL)
     const text = await response.text()
-
     const lines = text.split("\n")
     const data: SiteData[] = []
 
@@ -34,8 +34,11 @@ export async function loadSiteData(): Promise<SiteData[]> {
       const line = lines[i].trim()
       if (!line) continue
 
-      const values = line.split(",")
-      if (values.length < 19) continue // Ensure we have all columns
+      const values = parseCSVLine(line)
+      if (values.length < 19) continue
+
+      const monthValue = values[9]
+      const monthWithSuffix = monthValue.includes("월") ? monthValue : `${monthValue}월`
 
       data.push({
         현장명: values[0],
@@ -46,26 +49,45 @@ export async function loadSiteData(): Promise<SiteData[]> {
         절감량: Number.parseInt(values[5]),
         절감금액: Number.parseInt(values[6]),
         비절감금액: Number.parseInt(values[7]),
-        절감비용: values[8], // Keep as string
-        월: values[9], // Keep as string
+        절감비용: values[8],
+        월: monthWithSuffix,
         연: Number.parseInt(values[10]),
-        현장구분: values[11], // 규모 (대형, 중형, 중소형, 소형)
+        현장구분: values[11],
         업태: values[12],
         실내기대수: Number.parseInt(values[13]),
         구분: values[14],
-        절감률: values[15], // Keep as string
+        절감률: values[15],
         지역: values[16],
         한전요금: values[17],
-        탄소배출량: values[18], // Keep as string
+        탄소배출량: values[18],
       })
     }
 
-    console.log("[v0] CSV 데이터 로드 완료:", data.length, "개 레코드")
     return data
   } catch (error) {
-    console.error("[v0] CSV 파일 로드 실패:", error)
+    console.error("CSV 파일 로드 실패:", error)
     return []
   }
+}
+
+function parseCSVLine(line: string): string[] {
+  const values: string[] = []
+  let current = ""
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === "," && !inQuotes) {
+      values.push(current.trim())
+      current = ""
+    } else {
+      current += char
+    }
+  }
+  values.push(current.trim())
+  return values
 }
 
 export function filterByMonth(data: SiteData[], months: string[]): SiteData[] {
@@ -87,17 +109,14 @@ export function calculateTotalStats(data: SiteData[]) {
   const totalSites = new Set(data.map((d) => d.ID_SITE)).size
   const totalIndoorUnits = data.reduce((sum, d) => sum + d.실내기대수, 0)
   const totalSavingsAmount = data.reduce((sum, d) => sum + d.절감량, 0)
-
-  // Parse 절감비용 string (e.g., "₩134,430" -> 134430)
   const totalSavingsCost = data.reduce((sum, d) => {
     const cost = d.절감비용.replace(/[₩,]/g, "")
     return sum + (Number.parseInt(cost) || 0)
   }, 0)
-
   const totalBeforeCost = data.reduce((sum, d) => sum + d.비절감금액, 0)
   const totalAfterCost = data.reduce((sum, d) => sum + d.절감금액, 0)
-
-  // Parse 절감률 string (e.g., "7.80%" -> 7.8)
+  const totalBeforePower = data.reduce((sum, d) => sum + d.비절감절감량, 0)
+  const totalAfterPower = data.reduce((sum, d) => sum + d.절감사용량, 0)
   const avgSavingsRate =
     data.length > 0
       ? data.reduce((sum, d) => {
@@ -105,12 +124,11 @@ export function calculateTotalStats(data: SiteData[]) {
           return sum + (rate || 0)
         }, 0) / data.length
       : 0
-
-  // Parse 탄소배출량 string
   const totalCarbonReduction = data.reduce((sum, d) => {
     const carbon = Number.parseInt(d.탄소배출량)
     return sum + (carbon || 0)
   }, 0)
+  const recordCount = data.length
 
   return {
     totalSites,
@@ -119,14 +137,16 @@ export function calculateTotalStats(data: SiteData[]) {
     totalSavingsCost,
     totalBeforeCost,
     totalAfterCost,
+    totalBeforePower,
+    totalAfterPower,
     avgSavingsRate,
     totalCarbonReduction,
+    recordCount,
   }
 }
 
 export function groupByRegion(data: SiteData[]) {
   const regionMap = new Map<string, SiteData[]>()
-
   data.forEach((site) => {
     const region = site.지역
     if (!regionMap.has(region)) {
@@ -134,7 +154,6 @@ export function groupByRegion(data: SiteData[]) {
     }
     regionMap.get(region)!.push(site)
   })
-
   return regionMap
 }
 

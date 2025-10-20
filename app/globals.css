@@ -36,30 +36,25 @@
 }
 
 :root {
-  /* Adjusted light theme colors for better visibility */
   --background: oklch(0.99 0.002 240);
   --foreground: oklch(0.15 0.02 240);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.15 0.02 240);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0.02 240);
-  /* Changed primary color from blue (250) to burgundy/wine red (15) */
   --primary: oklch(0.42 0.18 15);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.94 0.01 240);
   --secondary-foreground: oklch(0.15 0.02 240);
   --muted: oklch(0.96 0.01 240);
   --muted-foreground: oklch(0.45 0.02 240);
-  /* Changed accent color from blue (250) to burgundy/wine red (15) */
   --accent: oklch(0.42 0.18 15);
   --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.9 0.01 240);
   --input: oklch(0.9 0.01 240);
-  /* Changed ring color from blue (250) to burgundy/wine red (15) */
   --ring: oklch(0.42 0.18 15);
-  /* Changed chart-1 color from blue (250) to burgundy/wine red (15) */
   --chart-1: oklch(0.48 0.18 15);
   --chart-2: oklch(0.55 0.18 180);
   --chart-3: oklch(0.6 0.15 60);
@@ -68,13 +63,11 @@
   --radius: 0.75rem;
   --sidebar: oklch(0.18 0.03 240);
   --sidebar-foreground: oklch(0.95 0.01 240);
-  /* Changed sidebar-primary color from blue (250) to burgundy/wine red (15) */
   --sidebar-primary: oklch(0.48 0.18 15);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.28 0.03 240);
   --sidebar-accent-foreground: oklch(0.95 0.01 240);
   --sidebar-border: oklch(0.25 0.02 240);
-  /* Changed sidebar-ring color from blue (250) to burgundy/wine red (15) */
   --sidebar-ring: oklch(0.48 0.18 15);
 }
 
@@ -85,23 +78,19 @@
   --card-foreground: oklch(0.95 0.01 240);
   --popover: oklch(0.15 0.02 240);
   --popover-foreground: oklch(0.95 0.01 240);
-  /* Changed primary color from blue (250) to burgundy/wine red (15) */
   --primary: oklch(0.55 0.18 15);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.22 0.02 240);
   --secondary-foreground: oklch(0.95 0.01 240);
   --muted: oklch(0.22 0.02 240);
   --muted-foreground: oklch(0.65 0.02 240);
-  /* Changed accent color from blue (250) to burgundy/wine red (15) */
   --accent: oklch(0.55 0.18 15);
   --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.5 0.2 27);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.22 0.02 240);
   --input: oklch(0.22 0.02 240);
-  /* Changed ring color from blue (250) to burgundy/wine red (15) */
   --ring: oklch(0.55 0.18 15);
-  /* Changed chart-1 color from blue (250) to burgundy/wine red (15) */
   --chart-1: oklch(0.55 0.18 15);
   --chart-2: oklch(0.7 0.15 180);
   --chart-3: oklch(0.8 0.12 60);
@@ -109,19 +98,16 @@
   --chart-5: oklch(0.75 0.15 30);
   --sidebar: oklch(0.15 0.02 240);
   --sidebar-foreground: oklch(0.95 0.01 240);
-  /* Changed sidebar-primary color from blue (250) to burgundy/wine red (15) */
   --sidebar-primary: oklch(0.55 0.18 15);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.25 0.02 240);
   --sidebar-accent-foreground: oklch(0.95 0.01 240);
   --sidebar-border: oklch(0.22 0.02 240);
-  /* Changed sidebar-ring color from blue (250) to burgundy/wine red (15) */
   --sidebar-ring: oklch(0.55 0.18 15);
 }
 
 @theme inline {
-  --font-sans: "LG Smart", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "LG Smart", ui-monospace, monospace;
+  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -166,5 +152,15 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "LG Smart", ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-lg-regular {
+    font-weight: 400;
+  }
+  .font-lg-bold {
+    font-weight: 700;
   }
 }

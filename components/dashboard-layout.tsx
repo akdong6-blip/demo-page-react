@@ -28,9 +28,9 @@ import {
 import { useState, useEffect } from "react"
 
 const navigation = [
+  { name: "현황", href: "/status", icon: MapPin },
   { name: "대시보드", href: "/", icon: LayoutDashboard },
   { name: "로직", href: "/logic", icon: FileText },
-  { name: "현황", href: "/status", icon: MapPin },
   { name: "에너지 리포트", href: "/report", icon: FileBarChart },
 ]
 
