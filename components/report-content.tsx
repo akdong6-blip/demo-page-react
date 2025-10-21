@@ -180,7 +180,7 @@ export function ReportContent() {
     <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground">에너지 절감 리포트</h2>
+        <h2 className="text-2xl md:text-3xl font-bold text-foreground">에너지 절감 리포트(예시)</h2>
         <p className="mt-2 text-sm md:text-base text-muted-foreground">
           LG전자 입니다. 고객님 현장의 기기에 에너지 로직을 적용하고 에너지 절감 효과를 분석한 결과입니다.
         </p>

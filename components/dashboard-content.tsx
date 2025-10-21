@@ -308,6 +308,12 @@ export function DashboardContent() {
                       </label>
                     ))}
                   </div>
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-xs text-muted-foreground font-lg-regular">
+                      <span className="font-medium">실내기 기준:</span> 소형(30대 미만) | 중소형(30~50대 미만) |
+                      중형(50~100대 미만) | 대형(100대 이상)
+                    </p>
+                  </div>
                 </div>
               </CollapsibleContent>
             </div>
@@ -484,7 +490,7 @@ export function DashboardContent() {
       <Card className="border border-gray-200 shadow-sm">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle className="text-lg md:text-xl font-lg-bold">전력량 사용 비교 분석</CardTitle>
+            <CardTitle className="text-lg md:text-xl font-lg-bold">전력량 사용 비교 분석(예시)</CardTitle>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="default"
