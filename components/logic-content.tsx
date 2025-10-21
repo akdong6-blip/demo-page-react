@@ -1,7 +1,6 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { Brain, Cloud, Thermometer, TrendingDown } from "lucide-react"
 
 export function LogicContent() {
   return (
@@ -13,7 +12,7 @@ export function LogicContent() {
 
       <Card>
         <CardContent className="p-4 md:p-6 lg:p-8">
-          <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6">에너지 절감 원리</h3>
+          <h3 className="text-lg md:text-xl font-lg-bold mb-4 md:mb-6">에너지 절감 원리</h3>
 
           <div className="space-y-4 md:space-y-6">
             <div className="flex gap-4">
@@ -77,69 +76,17 @@ export function LogicContent() {
 
       <Card>
         <CardContent className="p-4 md:p-6 lg:p-8">
-          <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 text-center">에너지 절감 제어 프로세스</h3>
+          <h3 className="text-lg md:text-xl font-lg-bold mb-4 md:mb-6 text-center">에너지 절감 제어 프로세스</h3>
 
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary/10 flex items-center justify-center border-4 border-primary">
-                <Brain className="w-10 h-10 md:w-12 md:h-12 text-primary" />
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-sm md:text-base">제품 정보/패턴 학습</div>
-                <div className="text-xs text-muted-foreground mt-1">학습 정보 기반 자동 제어</div>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center">
-              <div className="w-1 h-12 md:w-16 md:h-1 bg-primary" />
-              <div className="text-xs text-muted-foreground mt-1 md:mt-0 md:ml-2">데이터 전송</div>
-            </div>
-
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-24 h-24 rounded-full bg-chart-2/10 flex items-center justify-center border-4 border-chart-2">
-                <Cloud className="w-12 h-12 text-chart-2" />
-              </div>
-              <div className="text-center">
-                <div className="font-semibold">제품 운전 정보</div>
-                <div className="text-xs text-muted-foreground mt-1">BECON cloud</div>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-1 bg-chart-2" />
-              <div className="text-xs text-muted-foreground mt-1">제어 명령</div>
-            </div>
-
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-24 h-24 rounded-full bg-chart-3/10 flex items-center justify-center border-4 border-chart-3">
-                <Thermometer className="w-12 h-12 text-chart-3" />
-              </div>
-              <div className="text-center">
-                <div className="font-semibold">제어 명령 전달</div>
-                <div className="text-xs text-muted-foreground mt-1">(현장 쾌적 맞춤 기능)</div>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-1 bg-chart-3" />
-              <div className="text-xs text-muted-foreground mt-1">절감 실행</div>
-            </div>
-
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-24 h-24 rounded-full bg-chart-4/10 flex items-center justify-center border-4 border-chart-4">
-                <TrendingDown className="w-12 h-12 text-chart-4" />
-              </div>
-              <div className="text-center">
-                <div className="font-semibold">에너지 절감</div>
-              </div>
-            </div>
+          <div className="flex justify-center">
+            <img src="/images/energy-process.png" alt="에너지 절감 제어 프로세스" className="w-full max-w-4xl h-auto" />
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="p-4 md:p-6 lg:p-8">
-          <h3 className="text-lg md:text-xl font-bold mb-4 md:mb-6 text-center">일일 학습 및 제어 사이클</h3>
+          <h3 className="text-lg md:text-xl font-lg-bold mb-4 md:mb-6 text-center">일일 학습 및 제어 사이클</h3>
 
           <div className="max-w-2xl mx-auto">
             <div className="relative">

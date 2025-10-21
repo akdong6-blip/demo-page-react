@@ -65,7 +65,7 @@ export function StatusContent() {
       <div className="space-y-2">
         <h2 className="text-3xl md:text-4xl font-lg-bold text-foreground">더욱 넓어진 에너지 현장</h2>
         <p className="text-base md:text-lg text-muted-foreground font-lg-regular">
-          전국 {stats.totalSites.toLocaleString()}개 현장에서 BECON cloud를 사용하고 있습니다
+          전국 {stats.totalSites.toLocaleString()}개 현장에서 BECON cloud를 이용해 에너지를 절감하고 있습니다
         </p>
       </div>
 

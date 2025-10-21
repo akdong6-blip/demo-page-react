@@ -20,6 +20,45 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
+function numberToKorean(num: number): string {
+  if (num === 0) return "영원"
+
+  const units = ["", "만", "억", "조"]
+  const smallUnits = ["", "십", "백", "천"]
+  const koreanNumbers = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구"]
+
+  let result = ""
+  let unitIndex = 0
+
+  while (num > 0) {
+    const part = num % 10000
+    if (part > 0) {
+      let partStr = ""
+      let tempPart = part
+      let smallUnitIndex = 0
+
+      while (tempPart > 0) {
+        const digit = tempPart % 10
+        if (digit > 0) {
+          if (digit === 1 && smallUnitIndex > 0) {
+            partStr = smallUnits[smallUnitIndex] + partStr
+          } else {
+            partStr = koreanNumbers[digit] + smallUnits[smallUnitIndex] + partStr
+          }
+        }
+        tempPart = Math.floor(tempPart / 10)
+        smallUnitIndex++
+      }
+
+      result = partStr + units[unitIndex] + result
+    }
+    num = Math.floor(num / 10000)
+    unitIndex++
+  }
+
+  return result + "원"
+}
+
 const electricityRates = {
   industrial_low: { base: 5550, summer: 107.7, spring: 68.1, winter: 109.7, label: "산업용전력(갑) I - 저압" },
   industrial_highA1: { base: 6490, summer: 116.3, spring: 92.6, winter: 116.2, label: "산업용전력(갑) I - 고압A" },
@@ -389,27 +428,31 @@ export function DashboardContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
               <div className="p-3 md:p-4 bg-muted rounded-lg">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1">절감 전 전기요금</div>
-                <div className="text-xl md:text-2xl font-bold text-destructive">
+                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">절감 전 전기요금</div>
+                <div className="text-xl md:text-2xl font-lg-bold text-destructive">
                   ₩{displayBeforeCost.toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
                   {Math.round((stats.totalBeforePower || 0) / divisor).toLocaleString()} kWh
                 </div>
               </div>
               <div className="p-3 md:p-4 bg-muted rounded-lg">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1">절감 후 전기요금</div>
-                <div className="text-xl md:text-2xl font-bold text-primary">₩{displayAfterCost.toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">절감 후 전기요금</div>
+                <div className="text-xl md:text-2xl font-lg-bold text-primary">
+                  ₩{displayAfterCost.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
                   {Math.round((stats.totalAfterPower || 0) / divisor).toLocaleString()} kWh
                 </div>
               </div>
               <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-gray-200">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1">총 절감 금액</div>
-                <div className="text-xl md:text-2xl font-bold text-chart-2">
+                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">총 절감 금액</div>
+                <div className="text-xl md:text-2xl font-lg-bold text-chart-2">
                   ₩{Math.round((stats.totalSavingsCost || 0) / divisor).toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">절감률 {displaySavingsRate.toFixed(1)}%</div>
+                <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
+                  절감률 {displaySavingsRate.toFixed(1)}%
+                </div>
               </div>
             </div>
 
