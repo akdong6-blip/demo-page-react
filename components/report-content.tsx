@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, Edit2 } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { WasteAlertDetailModal } from "@/components/waste-alert-detail-modal"
 
 const monthlyData = [
   {
@@ -133,33 +134,33 @@ const weatherAlerts = [
     units: "707~709/711/713/화장실 : 23회 | 701/702/703/704/7B : 21회 | 503/506/507/513 : 15회 | ...",
   },
   {
-    title: "단열 불량 알림",
-    subtitle: "단열 상태 점검 필요",
-    detail: "단열 불량 실내기",
-    units: "801/802/화장실 : 12회 | 508/509/510/511 : 10회",
+    title: "에너지 누수",
+    subtitle: "실내에너지 누수 점검",
+    detail: "가장 개선이 필요한 실내기",
+    units: "508/509/510/511",
   },
   {
     title: "설정 온도 과다",
-    subtitle: "적정 온도 설정 점검",
+    subtitle: "적정온도 설정점검",
     detail: "다수 있음 실내기",
     units: "801/802/화장실 : 30회 | 508/509/510/511 : 28회 | 707~709/711/713/화장실 : 27회 | ...",
   },
   {
     title: "실내 온도 이상",
-    subtitle: "실내온도 설정",
+    subtitle: "실내환경점검",
     detail: "실내온도 편차가 큰 실내기",
     units: "701/702/703/704/7B",
   },
   {
     title: "운전 시간 과다",
-    subtitle: "정시간 운전 실내기 점검",
+    subtitle: "장시간 운전 실내기 점검",
     detail: "가장 점검이 필요한 실내기",
     units: "707~709/711/713/화장실",
   },
   {
     title: "잦은 On/Off",
     subtitle: "불필요한 냉/난방 운전점검",
-    detail: "가장 점검이 필요한 실내기",
+    detail: "가장 개선이 필요한 실내기",
     units: "801/802/화장실",
   },
 ]
@@ -168,6 +169,8 @@ export function ReportContent() {
   const [activeStep, setActiveStep] = useState(1)
   const [editingMonthly, setEditingMonthly] = useState(false)
   const [editingDaily, setEditingDaily] = useState(false)
+  const [selectedAlert, setSelectedAlert] = useState<(typeof weatherAlerts)[0] | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const steps = [
     { id: 1, name: "에너지절감 누적분석" },
@@ -175,6 +178,11 @@ export function ReportContent() {
     { id: 3, name: "당월상세분석" },
     { id: 4, name: "당월 낭비 알림 분석" },
   ]
+
+  const handleAlertClick = (alert: (typeof weatherAlerts)[0]) => {
+    setSelectedAlert(alert)
+    setIsModalOpen(true)
+  }
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
@@ -564,7 +572,11 @@ export function ReportContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 {weatherAlerts.map((alert, index) => (
-                  <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer">
+                  <Card
+                    key={index}
+                    className="hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => handleAlertClick(alert)}
+                  >
                     <CardContent className="p-6">
                       <div className="flex items-start gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -587,6 +599,11 @@ export function ReportContent() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Waste Alert Detail Modal */}
+      {selectedAlert && (
+        <WasteAlertDetailModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} alert={selectedAlert} />
       )}
     </div>
   )

@@ -77,7 +77,6 @@ export function DashboardContent() {
   const [showComfort, setShowComfort] = useState(false)
   const [showLearning, setShowLearning] = useState(false)
   const [selectedRate, setSelectedRate] = useState<keyof typeof electricityRates>("industrial_low")
-  const [season, setSeason] = useState<"summer" | "spring" | "winter">("summer")
   const [allSiteData, setAllSiteData] = useState<SiteData[]>([])
   const [filteredData, setFilteredData] = useState<SiteData[]>([])
   const [selectedMonths, setSelectedMonths] = useState<string[]>([])
@@ -143,7 +142,7 @@ export function DashboardContent() {
 
   const calculateCost = (kwh: number) => {
     const rate = electricityRates[selectedRate]
-    const energyRate = rate[season]
+    const energyRate = rate.summer // Removed season logic
     return Math.round(kwh * energyRate)
   }
 
@@ -403,33 +402,20 @@ export function DashboardContent() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs md:text-sm font-medium mb-2 block">요금제 선택</label>
-                <select
-                  className="w-full px-3 md:px-4 py-2 bg-card border border-border rounded-lg text-xs md:text-sm"
-                  value={selectedRate}
-                  onChange={(e) => setSelectedRate(e.target.value as keyof typeof electricityRates)}
-                >
-                  {Object.entries(electricityRates).map(([key, value]) => (
-                    <option key={key} value={key}>
-                      {value.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs md:text-sm font-medium mb-2 block">계절 선택</label>
-                <select
-                  className="w-full px-3 md:px-4 py-2 bg-card border border-border rounded-lg text-xs md:text-sm"
-                  value={season}
-                  onChange={(e) => setSeason(e.target.value as "summer" | "spring" | "winter")}
-                >
-                  <option value="summer">여름철 (6~8월)</option>
-                  <option value="spring">봄·가을철 (3~5월, 9~10월)</option>
-                  <option value="winter">겨울철 (11~2월)</option>
-                </select>
-              </div>
+            {/* 요금제 선택 */}
+            <div>
+              <label className="text-xs md:text-sm font-medium mb-2 block">요금제 선택</label>
+              <select
+                className="w-full px-3 md:px-4 py-2 bg-card border border-border rounded-lg text-xs md:text-sm"
+                value={selectedRate}
+                onChange={(e) => setSelectedRate(e.target.value as keyof typeof electricityRates)}
+              >
+                {Object.entries(electricityRates).map(([key, value]) => (
+                  <option key={key} value={key}>
+                    {value.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
