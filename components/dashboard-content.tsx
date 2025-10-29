@@ -12,6 +12,7 @@ import {
   filterByBusinessType,
   filterByScale,
   calculateTotalStats,
+  groupByBusinessType,
   BUSINESS_TYPES,
   MONTHS,
   SCALES,
@@ -19,45 +20,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-
-function numberToKorean(num: number): string {
-  if (num === 0) return "영원"
-
-  const units = ["", "만", "억", "조"]
-  const smallUnits = ["", "십", "백", "천"]
-  const koreanNumbers = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구"]
-
-  let result = ""
-  let unitIndex = 0
-
-  while (num > 0) {
-    const part = num % 10000
-    if (part > 0) {
-      let partStr = ""
-      let tempPart = part
-      let smallUnitIndex = 0
-
-      while (tempPart > 0) {
-        const digit = tempPart % 10
-        if (digit > 0) {
-          if (digit === 1 && smallUnitIndex > 0) {
-            partStr = smallUnits[smallUnitIndex] + partStr
-          } else {
-            partStr = koreanNumbers[digit] + smallUnits[smallUnitIndex] + partStr
-          }
-        }
-        tempPart = Math.floor(tempPart / 10)
-        smallUnitIndex++
-      }
-
-      result = partStr + units[unitIndex] + result
-    }
-    num = Math.floor(num / 10000)
-    unitIndex++
-  }
-
-  return result + "원"
-}
 
 const electricityRates = {
   industrial_low: { base: 5550, summer: 107.7, spring: 68.1, winter: 109.7, label: "산업용전력(갑) I - 저압" },
@@ -86,6 +48,9 @@ export function DashboardContent() {
   const [isMonthOpen, setIsMonthOpen] = useState(false)
   const [isBusinessTypeOpen, setIsBusinessTypeOpen] = useState(false)
   const [isScaleOpen, setIsScaleOpen] = useState(false)
+  const [businessTypeData, setBusinessTypeData] = useState<
+    Array<{ category: string; sites: number; percentage: number }>
+  >([])
 
   useEffect(() => {
     const loadData = async () => {
@@ -93,6 +58,18 @@ export function DashboardContent() {
       console.log("[v0] CSV 데이터 로드됨:", data.length, "개 레코드")
       setAllSiteData(data)
       setFilteredData(data)
+
+      const businessMap = groupByBusinessType(data)
+      const totalSites =
+        businessMap.size > 0 ? Array.from(businessMap.values()).reduce((sum, sites) => sum + sites.length, 0) : 0
+      const businessData = Array.from(businessMap.entries())
+        .map(([category, sites]) => ({
+          category,
+          sites: sites.length,
+          percentage: totalSites > 0 ? (sites.length / totalSites) * 100 : 0,
+        }))
+        .sort((a, b) => b.sites - a.sites)
+      setBusinessTypeData(businessData)
     }
     loadData()
   }, [])
@@ -140,18 +117,28 @@ export function DashboardContent() {
     setSelectedScales([])
   }
 
-  const calculateCost = (kwh: number) => {
-    const rate = electricityRates[selectedRate]
-    const energyRate = rate.summer // Removed season logic
-    return Math.round(kwh * energyRate)
-  }
+  // Removed calculateCost function as it's no longer used directly
 
   const stats = calculateTotalStats(filteredData)
   const divisor = displayMode === "average" && stats.recordCount > 0 ? stats.recordCount : 1
 
-  const displayBeforeCost = Math.round((stats.totalBeforeCost || 0) / divisor)
-  const displayAfterCost = Math.round((stats.totalAfterCost || 0) / divisor)
-  const displaySavingsRate = stats.avgSavingsRate || 0
+  const getSeasonRate = (month: string) => {
+    const monthNum = Number.parseInt(month.replace("월", ""))
+    if (monthNum >= 6 && monthNum <= 8) return electricityRates[selectedRate].summer
+    if (monthNum >= 11 || monthNum <= 2) return electricityRates[selectedRate].winter
+    return electricityRates[selectedRate].spring
+  }
+
+  // Calculate weighted average rate based on filtered data months
+  const avgRate =
+    filteredData.length > 0
+      ? filteredData.reduce((sum, d) => sum + getSeasonRate(d.월), 0) / filteredData.length
+      : electricityRates[selectedRate].summer
+
+  const displayBeforeCost = Math.round((stats.totalBeforePower * avgRate) / divisor)
+  const displayAfterCost = Math.round((stats.totalAfterPower * avgRate) / divisor)
+  const displaySavingsCost = displayBeforeCost - displayAfterCost
+  const displaySavingsRate = displayBeforeCost > 0 ? (displaySavingsCost / displayBeforeCost) * 100 : 0
 
   const getRateCategory = (rateKey: string) => {
     if (rateKey.startsWith("industrial")) return "industrial"
@@ -165,7 +152,12 @@ export function DashboardContent() {
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h2 className="text-2xl md:text-3xl font-lg-bold text-foreground">대시보드</h2>
+        <div>
+          <h2 className="text-2xl md:text-3xl font-lg-bold text-foreground">대시보드</h2>
+          <p className="text-xs text-muted-foreground/70 font-lg-regular italic mt-1">
+            * 2024년 데이터를 기반으로 작성되었습니다
+          </p>
+        </div>
       </div>
 
       <Card className="border border-gray-200 shadow-sm">
@@ -340,6 +332,37 @@ export function DashboardContent() {
         </CardContent>
       </Card>
 
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg md:text-xl font-lg-bold">업태별 현황</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {businessTypeData.map((data, index) => (
+              <Card key={data.category} className="shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{
+                        backgroundColor: `hsl(${(index * 360) / businessTypeData.length}, 70%, 50%)`,
+                      }}
+                    />
+                    <span className="font-lg-bold text-sm">{data.category}</span>
+                  </div>
+                  <div>
+                    <div className="font-lg-bold text-2xl text-primary">{data.sites}</div>
+                    <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
+                      현장 ({data.percentage.toFixed(1)}%)
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Label className="text-sm font-lg-bold">전기요금 표시 방식</Label>
@@ -385,9 +408,7 @@ export function DashboardContent() {
           <Card className="border-2 border-gray-200">
             <CardContent className="p-6">
               <div className="text-sm text-muted-foreground mb-2 font-lg-regular">총 절감 금액</div>
-              <div className="text-3xl font-lg-bold text-chart-2">
-                ₩{Math.round((stats.totalSavingsCost || 0) / divisor).toLocaleString()}
-              </div>
+              <div className="text-3xl font-lg-bold text-chart-2">₩{displaySavingsCost.toLocaleString()}</div>
               <div className="text-xs text-muted-foreground mt-2 font-lg-regular">
                 {displaySavingsRate.toFixed(1)}% 절감
               </div>
@@ -440,7 +461,7 @@ export function DashboardContent() {
               <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-gray-200">
                 <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">총 절감 금액</div>
                 <div className="text-xl md:text-2xl font-lg-bold text-chart-2">
-                  ₩{Math.round((stats.totalSavingsCost || 0) / divisor).toLocaleString()}
+                  ₩{displaySavingsCost.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
                   절감률 {displaySavingsRate.toFixed(1)}%

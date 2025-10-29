@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building2, Factory, School, Hotel, ShoppingBag, Landmark, GraduationCap } from "lucide-react"
-import { loadSiteData, groupByRegion, calculateTotalStats, type SiteData } from "@/lib/csv-parser"
+import { loadSiteData, groupByRegion, groupByBusinessType, calculateTotalStats, type SiteData } from "@/lib/csv-parser"
 
 export function StatusContent() {
   const [siteData, setSiteData] = useState<SiteData[]>([])
@@ -13,31 +13,23 @@ export function StatusContent() {
   useEffect(() => {
     const loadData = async () => {
       const data = await loadSiteData()
-      console.log("[v0] 현황 페이지 CSV 데이터 로드됨:", data.length, "개 현장")
+      console.log("[v0] 현황 페이지 CSV 데이터 로드됨:", data.length, "개 레코드")
       setSiteData(data)
 
       const regionMap = groupByRegion(data)
-      const totalSites = data.length
+      const totalSites =
+        regionMap.size > 0 ? Array.from(regionMap.values()).reduce((sum, sites) => sum + sites.length, 0) : 0
       const regional = Array.from(regionMap.entries())
         .map(([region, sites]) => ({
           region,
           sites: sites.length,
-          percentage: (sites.length / totalSites) * 100,
+          percentage: totalSites > 0 ? (sites.length / totalSites) * 100 : 0,
         }))
         .sort((a, b) => b.sites - a.sites)
       setRegionalData(regional)
 
-      // Calculate industry data
-      const industryMap = new Map<string, SiteData[]>()
-      data.forEach((site) => {
-        const industry = site.업태
-        if (!industryMap.has(industry)) {
-          industryMap.set(industry, [])
-        }
-        industryMap.get(industry)!.push(site)
-      })
-
-      const industry = Array.from(industryMap.entries()).map(([category, sites]) => ({
+      const businessMap = groupByBusinessType(data)
+      const industry = Array.from(businessMap.entries()).map(([category, sites]) => ({
         category,
         sites: sites.length,
         units: sites.reduce((sum, site) => sum + site.실내기대수, 0),
@@ -66,6 +58,9 @@ export function StatusContent() {
         <h2 className="text-3xl md:text-4xl font-lg-bold text-foreground">더욱 넓어진 에너지 현장</h2>
         <p className="text-base md:text-lg text-muted-foreground font-lg-regular">
           전국 {stats.totalSites.toLocaleString()}개 현장에서 BECON cloud를 이용해 에너지를 절감하고 있습니다
+        </p>
+        <p className="text-sm text-muted-foreground/70 font-lg-regular italic">
+          * 2024년 데이터를 기반으로 작성되었습니다
         </p>
       </div>
 

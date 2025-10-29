@@ -21,7 +21,7 @@ export interface SiteData {
 }
 
 const CSV_URL =
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/sites%20_%EC%A7%80%EC%97%AD%EB%AA%85%ED%86%B5%EC%9D%BC-mZ6vACXTfhwAAv5mKF4p6fdFR3kvOF.csv"
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/sites_0%EC%88%98%EC%A0%95-HQzZFki5bpUOP5ilKzSYjxt4S3Gt0I.csv"
 
 export async function loadSiteData(): Promise<SiteData[]> {
   try {
@@ -36,6 +36,9 @@ export async function loadSiteData(): Promise<SiteData[]> {
 
       const values = parseCSVLine(line)
       if (values.length < 19) continue
+
+      const businessType = values[12]
+      if (!businessType || businessType === "0" || businessType.trim() === "") continue
 
       const monthValue = values[9]
       const monthWithSuffix = monthValue.includes("월") ? monthValue : `${monthValue}월`
@@ -53,7 +56,7 @@ export async function loadSiteData(): Promise<SiteData[]> {
         월: monthWithSuffix,
         연: Number.parseInt(values[10]),
         현장구분: values[11],
-        업태: values[12],
+        업태: businessType,
         실내기대수: Number.parseInt(values[13]),
         구분: values[14],
         절감률: values[15],
@@ -105,9 +108,41 @@ export function filterByScale(data: SiteData[], scales: string[]): SiteData[] {
   return data.filter((site) => scales.includes(site.현장구분))
 }
 
+export function groupBySite(data: SiteData[]): Map<number, SiteData> {
+  const siteMap = new Map<number, SiteData>()
+
+  data.forEach((record) => {
+    const siteId = record.ID_SITE
+
+    if (!siteMap.has(siteId)) {
+      // First record for this site
+      siteMap.set(siteId, { ...record })
+    } else {
+      // Aggregate data for existing site
+      const existing = siteMap.get(siteId)!
+      existing.분석일수 += record.분석일수
+      existing.절감사용량 += record.절감사용량
+      existing.비절감절감량 += record.비절감절감량
+      existing.절감량 += record.절감량
+      existing.절감금액 += record.절감금액
+      existing.비절감금액 += record.비절감금액
+
+      // Parse and sum 절감비용
+      const existingCost = Number.parseInt(existing.절감비용.replace(/[₩,]/g, "")) || 0
+      const newCost = Number.parseInt(record.절감비용.replace(/[₩,]/g, "")) || 0
+      existing.절감비용 = (existingCost + newCost).toString()
+    }
+  })
+
+  return siteMap
+}
+
 export function calculateTotalStats(data: SiteData[]) {
-  const totalSites = new Set(data.map((d) => d.ID_SITE)).size
-  const totalIndoorUnits = data.reduce((sum, d) => sum + d.실내기대수, 0)
+  const siteMap = groupBySite(data)
+  const uniqueSites = Array.from(siteMap.values())
+
+  const totalSites = uniqueSites.length
+  const totalIndoorUnits = uniqueSites.reduce((sum, d) => sum + d.실내기대수, 0)
   const totalSavingsAmount = data.reduce((sum, d) => sum + d.절감량, 0)
   const totalSavingsCost = data.reduce((sum, d) => {
     const cost = d.절감비용.replace(/[₩,]/g, "")
@@ -146,8 +181,11 @@ export function calculateTotalStats(data: SiteData[]) {
 }
 
 export function groupByRegion(data: SiteData[]) {
+  const siteMap = groupBySite(data)
+  const uniqueSites = Array.from(siteMap.values())
+
   const regionMap = new Map<string, SiteData[]>()
-  data.forEach((site) => {
+  uniqueSites.forEach((site) => {
     const region = site.지역
     if (!regionMap.has(region)) {
       regionMap.set(region, [])
@@ -155,6 +193,21 @@ export function groupByRegion(data: SiteData[]) {
     regionMap.get(region)!.push(site)
   })
   return regionMap
+}
+
+export function groupByBusinessType(data: SiteData[]) {
+  const siteMap = groupBySite(data)
+  const uniqueSites = Array.from(siteMap.values())
+
+  const businessMap = new Map<string, SiteData[]>()
+  uniqueSites.forEach((site) => {
+    const business = site.업태
+    if (!businessMap.has(business)) {
+      businessMap.set(business, [])
+    }
+    businessMap.get(business)!.push(site)
+  })
+  return businessMap
 }
 
 export const BUSINESS_TYPES = [

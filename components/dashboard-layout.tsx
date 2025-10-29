@@ -43,17 +43,17 @@ const energyWasteFactors = [
   {
     id: 2,
     title: "단열 불량 알림",
-    description: "실내기가 설정온도에 도달하지 못하고 있습니다.\n주위 환경을 점검하세요",
+    description: "실내기가 설정온도에 도달하지 못하고 있습니다.\n주위 환경을 점검하시기 바랍니다.",
   },
   {
     id: 3,
     title: "설정온도과다",
-    description: "적정온도에 맞춰이 필요한 실내기가 있습니다.\n설정온도를 확인하세요",
+    description: "적정온도에 맞춰이 필요한 실내기가 있습니다.\n설정온도를 확인하시기 바랍니다.",
   },
   {
     id: 4,
     title: "실내온도이상",
-    description: "특정실내기 운전중임에도 실내온도가 변동하고 있습니다.\n실내기와 주위 환경 점검이 필요합니다.",
+    description: "특정 실내기 운전중임에도 실내 온도 변동이 없습니다.\n실내기와 주위 환경 점검이 필요합니다.",
   },
   {
     id: 5,
@@ -74,6 +74,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [popupOpen, setPopupOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [autoPlay, setAutoPlay] = useState(false)
+  const [weatherConfig, setWeatherConfig] = useState({ currentTemp: 26, normalTemp: 29, unit: "°C" })
+
+  useEffect(() => {
+    fetch("/data/weather-config.json")
+      .then((res) => res.json())
+      .then((data) => setWeatherConfig(data))
+      .catch((err) => console.error("Failed to load weather config:", err))
+  }, [])
 
   useEffect(() => {
     if (!autoPlay || !popupOpen) return
@@ -200,7 +208,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       >
         <div className="p-4 lg:p-6 border-b border-sidebar-border">
           <h1 className="text-lg lg:text-xl font-bold text-sidebar-foreground">BECON cloud</h1>
-          <div className="mt-2 text-xs lg:text-sm text-sidebar-foreground/70">외부온도 26°C (예년: 29°C)</div>
+          <div className="mt-2 text-xs lg:text-sm text-sidebar-foreground/70">
+            외부온도 {weatherConfig.currentTemp}
+            {weatherConfig.unit} (예년: {weatherConfig.normalTemp}
+            {weatherConfig.unit})
+          </div>
         </div>
 
         <nav className="flex-1 p-3 lg:p-4 space-y-1 lg:space-y-2">
@@ -244,7 +256,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold">주요 제공 항목</DialogTitle>
-                <DialogDescription>에너지 낭비 요인을 확인하고 개선하세요.</DialogDescription>
+                <DialogDescription>에너지 낭비 요인을 확인하고 개선할 수 있어요.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 {energyWasteFactors.map((factor) => (
