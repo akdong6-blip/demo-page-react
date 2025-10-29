@@ -12,7 +12,6 @@ import {
   filterByBusinessType,
   filterByScale,
   calculateTotalStats,
-  groupByBusinessType,
   BUSINESS_TYPES,
   MONTHS,
   SCALES,
@@ -48,9 +47,6 @@ export function DashboardContent() {
   const [isMonthOpen, setIsMonthOpen] = useState(false)
   const [isBusinessTypeOpen, setIsBusinessTypeOpen] = useState(false)
   const [isScaleOpen, setIsScaleOpen] = useState(false)
-  const [businessTypeData, setBusinessTypeData] = useState<
-    Array<{ category: string; sites: number; percentage: number }>
-  >([])
 
   useEffect(() => {
     const loadData = async () => {
@@ -58,18 +54,6 @@ export function DashboardContent() {
       console.log("[v0] CSV 데이터 로드됨:", data.length, "개 레코드")
       setAllSiteData(data)
       setFilteredData(data)
-
-      const businessMap = groupByBusinessType(data)
-      const totalSites =
-        businessMap.size > 0 ? Array.from(businessMap.values()).reduce((sum, sites) => sum + sites.length, 0) : 0
-      const businessData = Array.from(businessMap.entries())
-        .map(([category, sites]) => ({
-          category,
-          sites: sites.length,
-          percentage: totalSites > 0 ? (sites.length / totalSites) * 100 : 0,
-        }))
-        .sort((a, b) => b.sites - a.sites)
-      setBusinessTypeData(businessData)
     }
     loadData()
   }, [])
@@ -117,11 +101,6 @@ export function DashboardContent() {
     setSelectedScales([])
   }
 
-  // Removed calculateCost function as it's no longer used directly
-
-  const stats = calculateTotalStats(filteredData)
-  const divisor = displayMode === "average" && stats.recordCount > 0 ? stats.recordCount : 1
-
   const getSeasonRate = (month: string) => {
     const monthNum = Number.parseInt(month.replace("월", ""))
     if (monthNum >= 6 && monthNum <= 8) return electricityRates[selectedRate].summer
@@ -129,11 +108,13 @@ export function DashboardContent() {
     return electricityRates[selectedRate].spring
   }
 
-  // Calculate weighted average rate based on filtered data months
   const avgRate =
     filteredData.length > 0
       ? filteredData.reduce((sum, d) => sum + getSeasonRate(d.월), 0) / filteredData.length
       : electricityRates[selectedRate].summer
+
+  const stats = calculateTotalStats(filteredData)
+  const divisor = displayMode === "average" && stats.recordCount > 0 ? stats.recordCount : 1
 
   const displayBeforeCost = Math.round((stats.totalBeforePower * avgRate) / divisor)
   const displayAfterCost = Math.round((stats.totalAfterPower * avgRate) / divisor)
@@ -332,37 +313,6 @@ export function DashboardContent() {
         </CardContent>
       </Card>
 
-      <Card className="border border-gray-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg md:text-xl font-lg-bold">업태별 현황</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {businessTypeData.map((data, index) => (
-              <Card key={data.category} className="shadow-md hover:shadow-lg transition-shadow">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{
-                        backgroundColor: `hsl(${(index * 360) / businessTypeData.length}, 70%, 50%)`,
-                      }}
-                    />
-                    <span className="font-lg-bold text-sm">{data.category}</span>
-                  </div>
-                  <div>
-                    <div className="font-lg-bold text-2xl text-primary">{data.sites}</div>
-                    <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                      현장 ({data.percentage.toFixed(1)}%)
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Label className="text-sm font-lg-bold">전기요금 표시 방식</Label>
@@ -419,7 +369,30 @@ export function DashboardContent() {
 
       <Card className="border border-gray-200 shadow-sm">
         <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10">
-          <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금 계산기</CardTitle>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금 계산기</CardTitle>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-lg-bold">전기요금 표시 방식</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant={displayMode === "total" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDisplayMode("total")}
+                  className={`h-8 px-4 ${displayMode === "total" ? "bg-[#8B1538] hover:bg-[#8B1538]/90" : "border-gray-200 hover:bg-muted"}`}
+                >
+                  전체
+                </Button>
+                <Button
+                  variant={displayMode === "average" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDisplayMode("average")}
+                  className={`h-8 px-4 ${displayMode === "average" ? "bg-[#8B1538] hover:bg-[#8B1538]/90" : "border-gray-200 hover:bg-muted"}`}
+                >
+                  월평균
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -464,29 +437,7 @@ export function DashboardContent() {
                   ₩{displaySavingsCost.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                  절감률 {displaySavingsRate.toFixed(1)}%
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 p-3 md:p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="text-xs md:text-sm font-medium text-primary mb-2">선택한 요금제 정보</div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                <div>
-                  <span className="text-muted-foreground">기본요금:</span>{" "}
-                  <span className="font-semibold">{electricityRates[selectedRate].base.toLocaleString()}원/kW</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">여름철:</span>{" "}
-                  <span className="font-semibold">{electricityRates[selectedRate].summer} 원/kWh</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">봄·가을철:</span>{" "}
-                  <span className="font-semibold">{electricityRates[selectedRate].spring} 원/kWh</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">겨울철:</span>{" "}
-                  <span className="font-semibold">{electricityRates[selectedRate].winter} 원/kWh</span>
+                  절감률 {(stats.avgSavingsRate || 0).toFixed(1)}%
                 </div>
               </div>
             </div>
