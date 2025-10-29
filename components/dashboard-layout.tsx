@@ -48,7 +48,7 @@ const energyWasteFactors = [
   {
     id: 3,
     title: "설정온도과다",
-    description: "적정온도에 맞춰이 필요한 실내기가 있습니다.\n설정온도를 확인하시기 바랍니다.",
+    description: "적정온도 맞춤이 필요한 실내기가 있습니다.\n설정온도를 확인하시기 바랍니다.",
   },
   {
     id: 4,

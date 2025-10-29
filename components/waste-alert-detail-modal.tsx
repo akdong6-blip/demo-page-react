@@ -135,7 +135,7 @@ export function WasteAlertDetailModal({ isOpen, onClose, alert }: WasteAlertDeta
           <>
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm font-lg-regular">
-                야래의 실내기들은 19:00 ~ 20:00에 운전 하였습니다. 퇴실 시 에어컨 전원을 확인하시기 바랍니다.
+                아래의 실내기들은 19:00 ~ 20:00에 운전 하였습니다. 퇴실 시 에어컨 전원을 확인하시기 바랍니다.
               </p>
               <p className="text-sm font-lg-regular mt-2">
                 당월 다수 검출된 실내기는{" "}
@@ -193,7 +193,7 @@ export function WasteAlertDetailModal({ isOpen, onClose, alert }: WasteAlertDeta
           <>
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm font-lg-regular">
-                야래의 실내기들은 운전 중 실내온도가 일정하지 않습니다. 주변 출입문, 창문을 확인하시기 바랍니다.
+                아래의 실내기들은 운전 중 실내온도가 일정하지 않습니다. 주변 출입문, 창문을 확인하시기 바랍니다.
               </p>
               <p className="text-sm font-lg-regular mt-2">
                 해당기간 동안 실내온도 변동이 가장 큰 실내기는{" "}
@@ -306,7 +306,7 @@ export function WasteAlertDetailModal({ isOpen, onClose, alert }: WasteAlertDeta
           <>
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm font-lg-regular">
-                야래의 실내기들은 관방법/관난방 상태로 ON, OFF를 반복하고 있습니다. 잦은 사용으로도 쾌적할 수 있으니
+                아래의 실내기들은 관방법/관난방 상태로 ON, OFF를 반복하고 있습니다. 잦은 사용으로도 쾌적할 수 있으니
                 사용시간을 줄여보시기 바랍니다.
               </p>
               <p className="text-sm font-lg-regular mt-2">
@@ -397,7 +397,7 @@ export function WasteAlertDetailModal({ isOpen, onClose, alert }: WasteAlertDeta
           <>
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm font-lg-regular">
-                야래의 실내기들은 적정온도 설정이 필요합니다. 여름철 적정온도 26도, 겨울철 적정온도 20도를 맞추시기
+                아래의 실내기들은 적정온도 설정이 필요합니다. 여름철 적정온도 26도, 겨울철 적정온도 20도를 맞추시기
                 바랍니다.
               </p>
               <p className="text-sm font-lg-regular mt-2">
@@ -456,7 +456,7 @@ export function WasteAlertDetailModal({ isOpen, onClose, alert }: WasteAlertDeta
           <>
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm font-lg-regular">
-                야래의 실내기들은 운전 중 설정온도에 도달하지 못하고 있습니다. 주로 건물 외벽 유리창으로 인한 열손실로
+                아래의 실내기들은 운전 중 설정온도에 도달하지 못하고 있습니다. 주로 건물 외벽 유리창으로 인한 열손실로
                 발생합니다.
               </p>
               <p className="text-sm font-lg-regular mt-2">
@@ -518,7 +518,7 @@ export function WasteAlertDetailModal({ isOpen, onClose, alert }: WasteAlertDeta
           <>
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm font-lg-regular">
-                야래의 실내기들은 장시간 운전하는 것으로 보입니다. 에너지 절감을 위해 실내기 사용 패턴을
+                아래의 실내기들은 장시간 운전하는 것으로 보입니다. 에너지 절감을 위해 실내기 사용 패턴을
                 확인하시기바랍니다.
               </p>
               <p className="text-sm font-lg-regular mt-2">

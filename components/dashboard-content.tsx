@@ -313,60 +313,6 @@ export function DashboardContent() {
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Label className="text-sm font-lg-bold">전기요금 표시 방식</Label>
-          <div className="flex gap-2">
-            <Button
-              variant={displayMode === "total" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDisplayMode("total")}
-              className={`h-8 px-4 ${displayMode === "total" ? "bg-[#8B1538] hover:bg-[#8B1538]/90" : "border-gray-200 hover:bg-muted"}`}
-            >
-              전체
-            </Button>
-            <Button
-              variant={displayMode === "average" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDisplayMode("average")}
-              className={`h-8 px-4 ${displayMode === "average" ? "bg-[#8B1538] hover:bg-[#8B1538]/90" : "border-gray-200 hover:bg-muted"}`}
-            >
-              월평균
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-2 border-gray-200">
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground mb-2 font-lg-regular">절감 전 전기요금</div>
-              <div className="text-3xl font-lg-bold text-destructive">₩{displayBeforeCost.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground mt-2 font-lg-regular">
-                {displayMode === "average" ? "월 평균" : "전체 합계"}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-2 border-gray-200">
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground mb-2 font-lg-regular">절감 후 전기요금</div>
-              <div className="text-3xl font-lg-bold text-primary">₩{displayAfterCost.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground mt-2 font-lg-regular">
-                {displayMode === "average" ? "월 평균" : "전체 합계"}
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-2 border-gray-200">
-            <CardContent className="p-6">
-              <div className="text-sm text-muted-foreground mb-2 font-lg-regular">총 절감 금액</div>
-              <div className="text-3xl font-lg-bold text-chart-2">₩{displaySavingsCost.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground mt-2 font-lg-regular">
-                {displaySavingsRate.toFixed(1)}% 절감
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
       <Card className="border border-gray-200 shadow-sm">
         <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
