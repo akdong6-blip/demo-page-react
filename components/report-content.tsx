@@ -8,123 +8,197 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { WasteAlertDetailModal } from "@/components/waste-alert-detail-modal"
 
 const monthlyData = [
+  { month: "2024년 10월", days: 31, usage: 1201, before: 8, after: 8, saved: 0, rate: 0.0, cost: 0 },
+  { month: "2024년 11월", days: 30, usage: 148897, before: 1372, after: 1012, saved: 360, rate: 26.2, cost: 51613 },
   {
-    month: "2024년 10월",
+    month: "2024년 12월",
     days: 31,
-    usage: 384899,
-    before: 307919,
-    after: 230939,
-    saved: 2401,
-    rate: 44.0,
-    cost: 319755,
-  },
-  { month: "2024년 11월", days: 30, usage: 402098, before: 321678, after: 241259, saved: 473, rate: 16.3, cost: 86421 },
-  { month: "2024년 12월", days: 31, usage: 1222778, before: 978222, after: 733667, saved: 350, rate: 4.8, cost: 65023 },
-  {
-    month: "2025년 01월",
-    days: 31,
-    usage: 1400501,
-    before: 1120401,
-    after: 840301,
-    saved: 177,
-    rate: 2.2,
-    cost: 30918,
-  },
-  {
-    month: "2025년 02월",
-    days: 28,
-    usage: 1515557,
-    before: 1212446,
-    after: 909334,
-    saved: 239,
-    rate: 2.7,
-    cost: 42269,
-  },
-  { month: "2025년 03월", days: 31, usage: 239138, before: 191310, after: 143483, saved: 288, rate: 13.2, cost: 37753 },
-  {
-    month: "2025년 04월",
-    days: 30,
-    usage: 199731,
-    before: 159785,
-    after: 119839,
-    saved: 894,
-    rate: 37.9,
-    cost: 125997,
-  },
-  {
-    month: "2025년 05월",
-    days: 31,
-    usage: 409968,
-    before: 327974,
-    after: 245981,
-    saved: 2334,
-    rate: 42.8,
-    cost: 310573,
-  },
-  {
-    month: "2025년 06월",
-    days: 29,
-    usage: 1202385,
-    before: 961908,
-    after: 721431,
-    saved: 4574,
-    rate: 40.1,
-    cost: 797429,
-  },
-  {
-    month: "2025년 07월",
-    days: 31,
-    usage: 2470810,
-    before: 1976648,
-    after: 1482486,
-    saved: 4282,
-    rate: 23.2,
-    cost: 686258,
+    usage: 500213,
+    before: 4240,
+    after: 3546,
+    saved: 694,
+    rate: 16.4,
+    cost: 98276,
     highlight: true,
   },
-  {
-    month: "2025년 08월",
-    days: 31,
-    usage: 2247645,
-    before: 1798116,
-    after: 1348587,
-    saved: 4710,
-    rate: 26.8,
-    cost: 763560,
-  },
-  {
-    month: "2025년 09월",
-    days: 29,
-    usage: 884959,
-    before: 707967,
-    after: 530975,
-    saved: 4767,
-    rate: 40.9,
-    cost: 612783,
-  },
+  { month: "2025년 01월", days: 31, usage: 479976, before: 4052, after: 3402, saved: 650, rate: 16.0, cost: 92829 },
+  { month: "2025년 02월", days: 28, usage: 468551, before: 4224, after: 3325, saved: 899, rate: 21.3, cost: 131311 },
+  { month: "2025년 03월", days: 31, usage: 182292, before: 2915, after: 1618, saved: 1297, rate: 44.5, cost: 152022 },
+  { month: "2025년 04월", days: 30, usage: 57136, before: 974, after: 507, saved: 467, rate: 47.9, cost: 55163 },
+  { month: "2025년 05월", days: 31, usage: 39248, before: 318, after: 318, saved: 0, rate: 0.0, cost: 9 },
+  { month: "2025년 06월", days: 29, usage: 163145, before: 1287, after: 1059, saved: 228, rate: 17.7, cost: 36945 },
+  { month: "2025년 07월", days: 31, usage: 247145, before: 1717, after: 1571, saved: 146, rate: 8.5, cost: 20645 },
+  { month: "2025년 08월", days: 31, usage: 199017, before: 1353, after: 1259, saved: 94, rate: 6.9, cost: 15308 },
+  { month: "2025년 09월", days: 30, usage: 113357, before: 1122, after: 950, saved: 172, rate: 15.3, cost: 21315 },
 ]
 
-const dailyData = Array.from({ length: 31 }, (_, i) => {
-  const beforeControl = Math.floor(Math.random() * 20) + 35 // 비제어시: 35-55
-  const afterControl = Math.floor(Math.random() * 15) + 25 // 제어시: 25-40
-  const savingsRate = (((beforeControl - afterControl) / beforeControl) * 100).toFixed(1)
-
-  return {
-    day: i + 1,
-    weekday: ["월", "화", "수", "목", "금", "토", "일"][i % 7],
-    beforeControl, // 비제어시 에너지
-    afterControl, // 제어시 에너지
-    savingsRate, // 절감율
-    cost: Math.floor(Math.random() * 2000) + 3000,
-    operationRate: (Math.random() * 15 + 25).toFixed(1),
+const dailyData = [
+  {
+    day: 1,
+    weekday: "월",
+    beforeControl: 48,
+    afterControl: 45,
+    savingsRate: "6.2",
+    cost: 5286,
+    operationRate: "31.3",
     coolingHeating: "1.0",
-    operationTime: (Math.random() * 5 + 17).toFixed(1),
-    comfortTemp: (Math.random() * 2 + 22).toFixed(1),
-    indoorTemp: (Math.random() * 2 + 23).toFixed(1),
-    outdoorTemp: (Math.random() * 5 + 27).toFixed(1),
-    humidity: (Math.random() * 30 + 45).toFixed(1),
-  }
-})
+    operationTime: "21.4",
+    comfortTemp: "23.5",
+    indoorTemp: "23.3",
+    outdoorTemp: "29.8",
+    humidity: "65.0",
+  },
+  {
+    day: 2,
+    weekday: "화",
+    beforeControl: 41,
+    afterControl: 38,
+    savingsRate: "7.3",
+    cost: 4585,
+    operationRate: "30.5",
+    coolingHeating: "1.0",
+    operationTime: "20.3",
+    comfortTemp: "23.5",
+    indoorTemp: "23.3",
+    outdoorTemp: "29.1",
+    humidity: "58.0",
+  },
+  {
+    day: 3,
+    weekday: "수",
+    beforeControl: 41,
+    afterControl: 37,
+    savingsRate: "9.8",
+    cost: 4522,
+    operationRate: "29.3",
+    coolingHeating: "1.0",
+    operationTime: "19.9",
+    comfortTemp: "23.5",
+    indoorTemp: "23.4",
+    outdoorTemp: "30.0",
+    humidity: "54.0",
+  },
+  {
+    day: 4,
+    weekday: "목",
+    beforeControl: 38,
+    afterControl: 35,
+    savingsRate: "7.9",
+    cost: 4214,
+    operationRate: "29.7",
+    coolingHeating: "1.0",
+    operationTime: "20.1",
+    comfortTemp: "23.5",
+    indoorTemp: "23.3",
+    outdoorTemp: "27.3",
+    humidity: "66.0",
+  },
+  {
+    day: 5,
+    weekday: "금",
+    beforeControl: 39,
+    afterControl: 37,
+    savingsRate: "5.1",
+    cost: 4478,
+    operationRate: "28.4",
+    coolingHeating: "1.0",
+    operationTime: "19.7",
+    comfortTemp: "23.5",
+    indoorTemp: "23.3",
+    outdoorTemp: "30.7",
+    humidity: "54.0",
+  },
+  {
+    day: 6,
+    weekday: "토",
+    beforeControl: 37,
+    afterControl: 35,
+    savingsRate: "5.4",
+    cost: 4254,
+    operationRate: "28.4",
+    coolingHeating: "1.0",
+    operationTime: "19.7",
+    comfortTemp: "23.5",
+    indoorTemp: "23.3",
+    outdoorTemp: "28.1",
+    humidity: "72.0",
+  },
+  {
+    day: 7,
+    weekday: "일",
+    beforeControl: 34,
+    afterControl: 33,
+    savingsRate: "2.9",
+    cost: 3793,
+    operationRate: "27.4",
+    coolingHeating: "1.0",
+    operationTime: "19.5",
+    comfortTemp: "23.5",
+    indoorTemp: "23.2",
+    outdoorTemp: "28.1",
+    humidity: "63.0",
+  },
+  {
+    day: 8,
+    weekday: "월",
+    beforeControl: 32,
+    afterControl: 31,
+    savingsRate: "3.1",
+    cost: 3699,
+    operationRate: "28.2",
+    coolingHeating: "1.0",
+    operationTime: "18.5",
+    comfortTemp: "23.5",
+    indoorTemp: "23.3",
+    outdoorTemp: "28.2",
+    humidity: "53.0",
+  },
+  {
+    day: 9,
+    weekday: "화",
+    beforeControl: 27,
+    afterControl: 26,
+    savingsRate: "3.7",
+    cost: 3088,
+    operationRate: "28.4",
+    coolingHeating: "1.0",
+    operationTime: "17.3",
+    comfortTemp: "23.5",
+    indoorTemp: "23.3",
+    outdoorTemp: "26.9",
+    humidity: "54.0",
+  },
+  {
+    day: 10,
+    weekday: "수",
+    beforeControl: 29,
+    afterControl: 26,
+    savingsRate: "10.3",
+    cost: 3260,
+    operationRate: "27.7",
+    coolingHeating: "1.0",
+    operationTime: "16.5",
+    comfortTemp: "23.6",
+    indoorTemp: "23.5",
+    outdoorTemp: "28.1",
+    humidity: "41.0",
+  },
+  {
+    day: 11,
+    weekday: "목",
+    beforeControl: 40,
+    afterControl: 35,
+    savingsRate: "12.5",
+    cost: 4302,
+    operationRate: "31.6",
+    coolingHeating: "1.0",
+    operationTime: "19.3",
+    comfortTemp: "23.4",
+    indoorTemp: "23.2",
+    outdoorTemp: "28.7",
+    humidity: "41.0",
+  },
+]
 
 const weatherAlerts = [
   {
@@ -221,9 +295,9 @@ export function ReportContent() {
             <CardContent className="p-4 md:p-6">
               <h3 className="text-lg md:text-xl font-bold mb-4">에너지절감 누적분석</h3>
               <p className="text-sm md:text-base text-muted-foreground mb-6">
-                2024년 10월 ~ 2025년 09월 에너지 예측절감금액은 3,878,739원입니다.
+                2024년 10월 ~ 2025년 09월 에너지 예측절감금액은 675,436원입니다.
                 <br />
-                예측 절감량(절감율)은 25,489kWh (25.0%) 입니다.
+                예측 절감량(절감률)은 5,007kWh (21.2%) 입니다.
               </p>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
@@ -496,10 +570,10 @@ export function ReportContent() {
                     <th className="text-left p-2">요일</th>
                     <th className="text-right p-2">에너지 [kWh] / 월절감율 [%]</th>
                     <th className="text-right p-2">사용금액[원]</th>
-                    <th className="text-right p-2">충전율[%]</th>
-                    <th className="text-right p-2">냉/난방[h]</th>
+                    <th className="text-right p-2">운전율[%]</th>
+                    <th className="text-right p-2">냉/난방비</th>
                     <th className="text-right p-2">운전시간[h]</th>
-                    <th className="text-right p-2">쾌적온도[평균]</th>
+                    <th className="text-right p-2">설정온도[평균]</th>
                     <th className="text-right p-2">실내온도[평균]</th>
                     <th className="text-right p-2">외기온도[평균]</th>
                     <th className="text-right p-2">습도[평균]</th>
