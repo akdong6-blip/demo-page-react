@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Building2, Factory, School, Hotel, ShoppingBag, Landmark, GraduationCap } from "lucide-react"
+import { Building2, Factory, School, Hotel, ShoppingBag, Landmark, GraduationCap, ChevronDown } from "lucide-react"
 import { loadSiteData, groupByRegion, groupByBusinessType, calculateTotalStats, type SiteData } from "@/lib/csv-parser"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts"
 
 export function StatusContent() {
   const [siteData, setSiteData] = useState<SiteData[]>([])
   const [regionalData, setRegionalData] = useState<Array<{ region: string; sites: number; percentage: number }>>([])
   const [industryData, setIndustryData] = useState<Array<{ category: string; sites: number; units: number }>>([])
+  const [isChartsOpen, setIsChartsOpen] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -27,14 +30,18 @@ export function StatusContent() {
         }))
         .sort((a, b) => b.sites - a.sites)
       setRegionalData(regional)
+      console.log("[v0] 지역별 데이터:", regional.length, "개 지역")
 
       const businessMap = groupByBusinessType(data)
-      const industry = Array.from(businessMap.entries()).map(([category, sites]) => ({
-        category,
-        sites: sites.length,
-        units: sites.reduce((sum, site) => sum + site.실내기대수, 0),
-      }))
+      const industry = Array.from(businessMap.entries())
+        .map(([category, sites]) => ({
+          category,
+          sites: sites.length,
+          units: sites.reduce((sum, site) => sum + site.실내기대수, 0),
+        }))
+        .sort((a, b) => b.sites - a.sites)
       setIndustryData(industry)
+      console.log("[v0] 업태별 데이터:", industry.length, "개 업태")
     }
     loadData()
   }, [])
@@ -51,6 +58,13 @@ export function StatusContent() {
     if (category.includes("숙박") || category.includes("호텔")) return Hotel
     return Building2
   }
+
+  const burgundyGradients = [
+    { id: "burgundy-0", light: "#D4697A", mid: "#A8344A", dark: "#7A1230" },
+    { id: "burgundy-1", light: "#C85A6E", mid: "#9C2E3E", dark: "#6E0F28" },
+    { id: "burgundy-2", light: "#BC4D61", mid: "#902838", dark: "#620C20" },
+    { id: "burgundy-3", light: "#B04054", mid: "#842232", dark: "#560A18" },
+  ]
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
@@ -170,6 +184,188 @@ export function StatusContent() {
             })}
           </div>
         </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <Collapsible open={isChartsOpen} onOpenChange={setIsChartsOpen}>
+          <CollapsibleTrigger className="w-full">
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl md:text-2xl font-lg-bold">통계 차트</CardTitle>
+                <ChevronDown className={`w-5 h-5 transition-transform ${isChartsOpen ? "rotate-180" : ""}`} />
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-8 pt-4">
+              {/* 지역별 현장 수 차트 */}
+              <div>
+                <h4 className="font-lg-bold text-lg mb-4">지역별 현장 수</h4>
+                <ResponsiveContainer width="100%" height={500}>
+                  <BarChart data={regionalData} margin={{ top: 60, right: 20, left: 20, bottom: 80 }}>
+                    <defs>
+                      {burgundyGradients.map((gradient) => (
+                        <linearGradient key={gradient.id} id={gradient.id} x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor={gradient.light} />
+                          <stop offset="50%" stopColor={gradient.mid} />
+                          <stop offset="100%" stopColor={gradient.dark} />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis
+                      dataKey="region"
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      tick={{ fontSize: 12, fill: "#4a5568" }}
+                    />
+                    <YAxis tick={{ fontSize: 12, fill: "#4a5568" }} />
+                    <Tooltip
+                      formatter={(value: number) => [
+                        `${value}개 (${regionalData.find((d) => d.sites === value)?.percentage.toFixed(1)}%)`,
+                        "현장 수",
+                      ]}
+                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
+                    />
+                    <Bar dataKey="sites" radius={[8, 8, 0, 0]} barSize={60}>
+                      {regionalData.map((entry, index) => {
+                        const gradientId = burgundyGradients[index % burgundyGradients.length].id
+                        console.log("[v0] 막대 렌더링:", entry.region, "gradient:", gradientId)
+                        return (
+                          <Cell key={`cell-${index}`} fill={`url(#${gradientId})`} stroke="#7A1230" strokeWidth={2} />
+                        )
+                      })}
+                      <LabelList
+                        dataKey="sites"
+                        position="top"
+                        content={(props: any) => {
+                          const { x, y, width, value } = props
+                          const dataPoint = regionalData.find((d) => d.sites === value)
+                          return (
+                            <g>
+                              <text
+                                x={x + width / 2}
+                                y={y - 25}
+                                fill="#1a202c"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize={16}
+                                fontWeight="bold"
+                              >
+                                {value}
+                              </text>
+                              <text
+                                x={x + width / 2}
+                                y={y - 8}
+                                fill="#4a5568"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize={13}
+                              >
+                                {dataPoint?.percentage.toFixed(1)}%
+                              </text>
+                            </g>
+                          )
+                        }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* 업태별 현장 수 차트 */}
+              <div>
+                <h4 className="font-lg-bold text-lg mb-4">업태별 현장 수</h4>
+                <ResponsiveContainer width="100%" height={500}>
+                  <BarChart data={industryData} margin={{ top: 60, right: 20, left: 20, bottom: 100 }}>
+                    <defs>
+                      {burgundyGradients.map((gradient) => (
+                        <linearGradient
+                          key={`${gradient.id}-biz`}
+                          id={`${gradient.id}-biz`}
+                          x1="0%"
+                          y1="0%"
+                          x2="100%"
+                          y2="100%"
+                        >
+                          <stop offset="0%" stopColor={gradient.light} />
+                          <stop offset="50%" stopColor={gradient.mid} />
+                          <stop offset="100%" stopColor={gradient.dark} />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis
+                      dataKey="category"
+                      angle={-45}
+                      textAnchor="end"
+                      height={120}
+                      tick={{ fontSize: 12, fill: "#4a5568" }}
+                      interval={0}
+                    />
+                    <YAxis tick={{ fontSize: 12, fill: "#4a5568" }} />
+                    <Tooltip
+                      formatter={(value: number) => {
+                        const totalSites = industryData.reduce((sum, d) => sum + d.sites, 0)
+                        const percentage = totalSites > 0 ? ((value / totalSites) * 100).toFixed(1) : "0.0"
+                        return [`${value}개 (${percentage}%)`, "현장 수"]
+                      }}
+                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
+                    />
+                    <Bar dataKey="sites" radius={[8, 8, 0, 0]} barSize={60}>
+                      {industryData.map((entry, index) => {
+                        const gradientId = `${burgundyGradients[index % burgundyGradients.length].id}-biz`
+                        return (
+                          <Cell
+                            key={`cell-biz-${index}`}
+                            fill={`url(#${gradientId})`}
+                            stroke="#7A1230"
+                            strokeWidth={2}
+                          />
+                        )
+                      })}
+                      <LabelList
+                        dataKey="sites"
+                        position="top"
+                        content={(props: any) => {
+                          const { x, y, width, value } = props
+                          const totalSites = industryData.reduce((sum, d) => sum + d.sites, 0)
+                          const percentage = totalSites > 0 ? ((value / totalSites) * 100).toFixed(1) : "0.0"
+                          return (
+                            <g>
+                              <text
+                                x={x + width / 2}
+                                y={y - 25}
+                                fill="#1a202c"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize={16}
+                                fontWeight="bold"
+                              >
+                                {value}
+                              </text>
+                              <text
+                                x={x + width / 2}
+                                y={y - 8}
+                                fill="#4a5568"
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize={13}
+                              >
+                                {percentage}%
+                              </text>
+                            </g>
+                          )
+                        }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
     </div>
   )
