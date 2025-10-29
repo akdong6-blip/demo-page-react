@@ -59,12 +59,23 @@ export function StatusContent() {
     return Building2
   }
 
-  const burgundyGradients = [
-    { id: "burgundy-0", light: "#D4697A", mid: "#A8344A", dark: "#7A1230" },
-    { id: "burgundy-1", light: "#C85A6E", mid: "#9C2E3E", dark: "#6E0F28" },
-    { id: "burgundy-2", light: "#BC4D61", mid: "#902838", dark: "#620C20" },
-    { id: "burgundy-3", light: "#B04054", mid: "#842232", dark: "#560A18" },
-  ]
+  const getGrayColor = (sites: number, maxSites: number) => {
+    const intensity = sites / maxSites
+    // Dark gray for high values, light gray for low values
+    const lightness = 85 - intensity * 55 // Range from 85% (light) to 30% (dark)
+    return `hsl(0, 0%, ${lightness}%)`
+  }
+
+  const getBurgundyColor = (sites: number, maxSites: number) => {
+    const intensity = sites / maxSites
+    // Dark burgundy for high values, light burgundy for low values
+    const lightness = 65 - intensity * 35 // Range from 65% (light) to 30% (dark)
+    const saturation = 40 + intensity * 30 // Range from 40% to 70%
+    return `hsl(345, ${saturation}%, ${lightness}%)`
+  }
+
+  const maxRegionalSites = regionalData.length > 0 ? Math.max(...regionalData.map((d) => d.sites)) : 1
+  const maxIndustrySites = industryData.length > 0 ? Math.max(...industryData.map((d) => d.sites)) : 1
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
@@ -203,15 +214,6 @@ export function StatusContent() {
                 <h4 className="font-lg-bold text-lg mb-4">지역별 현장 수</h4>
                 <ResponsiveContainer width="100%" height={500}>
                   <BarChart data={regionalData} margin={{ top: 60, right: 20, left: 20, bottom: 80 }}>
-                    <defs>
-                      {burgundyGradients.map((gradient) => (
-                        <linearGradient key={gradient.id} id={gradient.id} x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor={gradient.light} />
-                          <stop offset="50%" stopColor={gradient.mid} />
-                          <stop offset="100%" stopColor={gradient.dark} />
-                        </linearGradient>
-                      ))}
-                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis
                       dataKey="region"
@@ -229,13 +231,14 @@ export function StatusContent() {
                       contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
                     />
                     <Bar dataKey="sites" radius={[8, 8, 0, 0]} barSize={60}>
-                      {regionalData.map((entry, index) => {
-                        const gradientId = burgundyGradients[index % burgundyGradients.length].id
-                        console.log("[v0] 막대 렌더링:", entry.region, "gradient:", gradientId)
-                        return (
-                          <Cell key={`cell-${index}`} fill={`url(#${gradientId})`} stroke="#7A1230" strokeWidth={2} />
-                        )
-                      })}
+                      {regionalData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={getGrayColor(entry.sites, maxRegionalSites)}
+                          stroke="#4a5568"
+                          strokeWidth={1}
+                        />
+                      ))}
                       <LabelList
                         dataKey="sites"
                         position="top"
@@ -279,22 +282,6 @@ export function StatusContent() {
                 <h4 className="font-lg-bold text-lg mb-4">업태별 현장 수</h4>
                 <ResponsiveContainer width="100%" height={500}>
                   <BarChart data={industryData} margin={{ top: 60, right: 20, left: 20, bottom: 100 }}>
-                    <defs>
-                      {burgundyGradients.map((gradient) => (
-                        <linearGradient
-                          key={`${gradient.id}-biz`}
-                          id={`${gradient.id}-biz`}
-                          x1="0%"
-                          y1="0%"
-                          x2="100%"
-                          y2="100%"
-                        >
-                          <stop offset="0%" stopColor={gradient.light} />
-                          <stop offset="50%" stopColor={gradient.mid} />
-                          <stop offset="100%" stopColor={gradient.dark} />
-                        </linearGradient>
-                      ))}
-                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis
                       dataKey="category"
@@ -314,17 +301,14 @@ export function StatusContent() {
                       contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
                     />
                     <Bar dataKey="sites" radius={[8, 8, 0, 0]} barSize={60}>
-                      {industryData.map((entry, index) => {
-                        const gradientId = `${burgundyGradients[index % burgundyGradients.length].id}-biz`
-                        return (
-                          <Cell
-                            key={`cell-biz-${index}`}
-                            fill={`url(#${gradientId})`}
-                            stroke="#7A1230"
-                            strokeWidth={2}
-                          />
-                        )
-                      })}
+                      {industryData.map((entry, index) => (
+                        <Cell
+                          key={`cell-biz-${index}`}
+                          fill={getBurgundyColor(entry.sites, maxIndustrySites)}
+                          stroke="#7A1230"
+                          strokeWidth={1}
+                        />
+                      ))}
                       <LabelList
                         dataKey="sites"
                         position="top"
