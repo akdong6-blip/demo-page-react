@@ -114,7 +114,7 @@ export function DashboardContent() {
       : electricityRates[selectedRate].summer
 
   const stats = calculateTotalStats(filteredData)
-  const divisor = displayMode === "average" && stats.recordCount > 0 ? stats.recordCount : 1
+  const divisor = displayMode === "average" ? 12 : 1
 
   const displayBeforeCost = Math.round((stats.totalBeforePower * avgRate) / divisor)
   const displayAfterCost = Math.round((stats.totalAfterPower * avgRate) / divisor)
