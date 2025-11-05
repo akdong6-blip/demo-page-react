@@ -8,16 +8,13 @@ import { Check, ChevronDown } from "lucide-react"
 import {
   loadSiteData,
   type SiteData,
-  filterByMonth,
   filterByBusinessType,
   filterByScale,
   calculateTotalStats,
   BUSINESS_TYPES,
-  MONTHS,
   SCALES,
 } from "@/lib/csv-parser"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 const electricityRates = {
@@ -40,13 +37,11 @@ export function DashboardContent() {
   const [selectedRate, setSelectedRate] = useState<keyof typeof electricityRates>("industrial_low")
   const [allSiteData, setAllSiteData] = useState<SiteData[]>([])
   const [filteredData, setFilteredData] = useState<SiteData[]>([])
-  const [selectedMonths, setSelectedMonths] = useState<string[]>([])
   const [selectedBusinessTypes, setSelectedBusinessTypes] = useState<string[]>([])
   const [selectedScales, setSelectedScales] = useState<string[]>([])
-  const [displayMode, setDisplayMode] = useState<"total" | "average">("total")
-  const [isMonthOpen, setIsMonthOpen] = useState(false)
   const [isBusinessTypeOpen, setIsBusinessTypeOpen] = useState(false)
   const [isScaleOpen, setIsScaleOpen] = useState(false)
+  const [displayMode, setDisplayMode] = useState<"annual" | "monthly">("annual")
 
   useEffect(() => {
     const loadData = async () => {
@@ -61,10 +56,6 @@ export function DashboardContent() {
   useEffect(() => {
     let filtered = allSiteData
 
-    if (selectedMonths.length > 0) {
-      filtered = filterByMonth(filtered, selectedMonths)
-    }
-
     if (selectedBusinessTypes.length > 0) {
       filtered = filterByBusinessType(filtered, selectedBusinessTypes)
     }
@@ -75,11 +66,7 @@ export function DashboardContent() {
 
     setFilteredData(filtered)
     console.log("[v0] 필터 적용됨:", filtered.length, "개 레코드")
-  }, [selectedMonths, selectedBusinessTypes, selectedScales, allSiteData])
-
-  const handleMonthToggle = (month: string) => {
-    setSelectedMonths((prev) => (prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]))
-  }
+  }, [selectedBusinessTypes, selectedScales, allSiteData])
 
   const handleBusinessTypeToggle = (type: string) => {
     setSelectedBusinessTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
@@ -87,10 +74,6 @@ export function DashboardContent() {
 
   const handleScaleToggle = (scale: string) => {
     setSelectedScales((prev) => (prev.includes(scale) ? prev.filter((s) => s !== scale) : [...prev, scale]))
-  }
-
-  const handleResetMonths = () => {
-    setSelectedMonths([])
   }
 
   const handleResetBusinessTypes = () => {
@@ -101,10 +84,9 @@ export function DashboardContent() {
     setSelectedScales([])
   }
 
-  const getSeasonRate = (month: string) => {
-    const monthNum = Number.parseInt(month.replace("월", ""))
-    if (monthNum >= 6 && monthNum <= 8) return electricityRates[selectedRate].summer
-    if (monthNum >= 11 || monthNum <= 2) return electricityRates[selectedRate].winter
+  const getSeasonRate = (month: number) => {
+    if (month >= 6 && month <= 8) return electricityRates[selectedRate].summer
+    if (month >= 11 || month <= 2) return electricityRates[selectedRate].winter
     return electricityRates[selectedRate].spring
   }
 
@@ -114,12 +96,18 @@ export function DashboardContent() {
       : electricityRates[selectedRate].summer
 
   const stats = calculateTotalStats(filteredData)
-  const divisor = displayMode === "average" ? 12 : 1
+  const divisor = displayMode === "annual" ? 1 : 12
 
-  const displayBeforeCost = Math.round((stats.totalBeforePower * avgRate) / divisor)
-  const displayAfterCost = Math.round((stats.totalAfterPower * avgRate) / divisor)
-  const displaySavingsCost = displayBeforeCost - displayAfterCost
-  const displaySavingsRate = displayBeforeCost > 0 ? (displaySavingsCost / displayBeforeCost) * 100 : 0
+  const avgSavingsAmount = stats.totalSites > 0 ? Math.round(stats.totalSavingsAmount / stats.totalSites / divisor) : 0
+  const avgSavingsCost = stats.totalSites > 0 ? Math.round(stats.totalSavingsCost / stats.totalSites / divisor) : 0
+
+  const avgBeforeCostPerSite =
+    stats.totalSites > 0 ? Math.round((stats.totalBeforePower * avgRate) / stats.totalSites / divisor) : 0
+  const avgAfterCostPerSite =
+    stats.totalSites > 0 ? Math.round((stats.totalAfterPower * avgRate) / stats.totalSites / divisor) : 0
+  const avgSavingsCostPerSite = avgBeforeCostPerSite - avgAfterCostPerSite
+
+  const avgSavingsRateDisplay = stats.avgSavingsRate
 
   const getRateCategory = (rateKey: string) => {
     if (rateKey.startsWith("industrial")) return "industrial"
@@ -136,7 +124,7 @@ export function DashboardContent() {
         <div>
           <h2 className="text-2xl md:text-3xl font-lg-bold text-foreground">대시보드</h2>
           <p className="text-xs text-muted-foreground/70 font-lg-regular italic mt-1">
-            * 2024년 데이터를 기반으로 작성되었습니다
+            * 데이터 출처: 2024년 개시 현장 중, 개시일부터 12개월간의 현장 실측 결과
           </p>
         </div>
       </div>
@@ -149,7 +137,6 @@ export function DashboardContent() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                setSelectedMonths([])
                 setSelectedBusinessTypes([])
                 setSelectedScales([])
               }}
@@ -160,47 +147,6 @@ export function DashboardContent() {
           </div>
         </CardHeader>
         <CardContent className="space-y-2 pt-0">
-          {/* 월별 필터 */}
-          <Collapsible open={isMonthOpen} onOpenChange={setIsMonthOpen}>
-            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-              <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <span className="font-lg-bold text-sm">월별</span>
-                  <span className="text-xs text-muted-foreground font-lg-regular">
-                    {selectedMonths.length === 0 ? "(전체 데이터)" : `(${selectedMonths.length}개 선택됨)`}
-                  </span>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform ${isMonthOpen ? "rotate-180" : ""}`}
-                />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="px-4 py-3 border-t border-gray-200 bg-muted/30">
-                  <div className="flex flex-wrap gap-2">
-                    {MONTHS.map((month) => (
-                      <label
-                        key={month}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-all ${
-                          selectedMonths.includes(month)
-                            ? "bg-[#8B1538] text-white border-[#8B1538]"
-                            : "bg-white border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <Checkbox
-                          id={`month-${month}`}
-                          checked={selectedMonths.includes(month)}
-                          onCheckedChange={() => handleMonthToggle(month)}
-                          className="hidden"
-                        />
-                        <span className="text-sm font-lg-regular">{month}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </div>
-          </Collapsible>
-
           {/* 업태별 필터 */}
           <Collapsible open={isBusinessTypeOpen} onOpenChange={setIsBusinessTypeOpen}>
             <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -292,22 +238,45 @@ export function DashboardContent() {
           </Collapsible>
 
           {/* 통계 요약 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200 mt-4">
-            <div>
-              <div className="text-xs text-muted-foreground mb-1 font-lg-regular">총 현장 수</div>
-              <div className="text-xl font-lg-bold">{(stats.totalSites || 0).toLocaleString()}</div>
+          <div className="space-y-3 mt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-lg-bold text-muted-foreground">현장별 평균</span>
+              <div className="flex gap-1 bg-muted rounded-lg p-1">
+                <Button
+                  variant={displayMode === "annual" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setDisplayMode("annual")}
+                  className={`h-7 px-3 text-xs ${
+                    displayMode === "annual" ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90" : "hover:bg-transparent"
+                  }`}
+                >
+                  연간
+                </Button>
+                <Button
+                  variant={displayMode === "monthly" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setDisplayMode("monthly")}
+                  className={`h-7 px-3 text-xs ${
+                    displayMode === "monthly" ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90" : "hover:bg-transparent"
+                  }`}
+                >
+                  월간
+                </Button>
+              </div>
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1 font-lg-regular">실내기 대수</div>
-              <div className="text-xl font-lg-bold">{(stats.totalIndoorUnits || 0).toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1 font-lg-regular">절감량</div>
-              <div className="text-xl font-lg-bold">{(stats.totalSavingsAmount || 0).toLocaleString()} kWh</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감률</div>
-              <div className="text-xl font-lg-bold">{(stats.avgSavingsRate || 0).toFixed(1)}%</div>
+            <div className="grid grid-cols-3 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감량</div>
+                <div className="text-xl font-lg-bold">{avgSavingsAmount.toLocaleString()} kWh</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감률</div>
+                <div className="text-xl font-lg-bold">{stats.avgSavingsRate.toFixed(1)}%</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감금액</div>
+                <div className="text-xl font-lg-bold">₩{avgSavingsCost.toLocaleString()}</div>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -317,26 +286,27 @@ export function DashboardContent() {
         <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금 계산기</CardTitle>
-            <div className="flex items-center gap-2">
-              <Label className="text-sm font-lg-bold">전기요금 표시 방식</Label>
-              <div className="flex gap-2">
-                <Button
-                  variant={displayMode === "total" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDisplayMode("total")}
-                  className={`h-8 px-4 ${displayMode === "total" ? "bg-[#8B1538] hover:bg-[#8B1538]/90" : "border-gray-200 hover:bg-muted"}`}
-                >
-                  전체
-                </Button>
-                <Button
-                  variant={displayMode === "average" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDisplayMode("average")}
-                  className={`h-8 px-4 ${displayMode === "average" ? "bg-[#8B1538] hover:bg-[#8B1538]/90" : "border-gray-200 hover:bg-muted"}`}
-                >
-                  월평균
-                </Button>
-              </div>
+            <div className="flex gap-1 bg-muted rounded-lg p-1">
+              <Button
+                variant={displayMode === "annual" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setDisplayMode("annual")}
+                className={`h-7 px-3 text-xs ${
+                  displayMode === "annual" ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90" : "hover:bg-transparent"
+                }`}
+              >
+                연간
+              </Button>
+              <Button
+                variant={displayMode === "monthly" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setDisplayMode("monthly")}
+                className={`h-7 px-3 text-xs ${
+                  displayMode === "monthly" ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90" : "hover:bg-transparent"
+                }`}
+              >
+                월간
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -360,30 +330,42 @@ export function DashboardContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
               <div className="p-3 md:p-4 bg-muted rounded-lg">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">절감 전 전기요금</div>
+                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
+                  절감 전 전기요금 ({displayMode === "annual" ? "연간" : "월간"})
+                </div>
                 <div className="text-xl md:text-2xl font-lg-bold text-destructive">
-                  ₩{displayBeforeCost.toLocaleString()}
+                  ₩{avgBeforeCostPerSite.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                  {Math.round((stats.totalBeforePower || 0) / divisor).toLocaleString()} kWh
+                  {stats.totalSites > 0
+                    ? Math.round(stats.totalBeforePower / stats.totalSites / divisor).toLocaleString()
+                    : 0}{" "}
+                  kWh
                 </div>
               </div>
               <div className="p-3 md:p-4 bg-muted rounded-lg">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">절감 후 전기요금</div>
+                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
+                  절감 후 전기요금 ({displayMode === "annual" ? "연간" : "월간"})
+                </div>
                 <div className="text-xl md:text-2xl font-lg-bold text-primary">
-                  ₩{displayAfterCost.toLocaleString()}
+                  ₩{avgAfterCostPerSite.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                  {Math.round((stats.totalAfterPower || 0) / divisor).toLocaleString()} kWh
+                  {stats.totalSites > 0
+                    ? Math.round(stats.totalAfterPower / stats.totalSites / divisor).toLocaleString()
+                    : 0}{" "}
+                  kWh
                 </div>
               </div>
               <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-gray-200">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">총 절감 금액</div>
+                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
+                  총 절감 금액 ({displayMode === "annual" ? "연간" : "월간"})
+                </div>
                 <div className="text-xl md:text-2xl font-lg-bold text-chart-2">
-                  ₩{displaySavingsCost.toLocaleString()}
+                  ₩{avgSavingsCostPerSite.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                  절감률 {(stats.avgSavingsRate || 0).toFixed(1)}%
+                  절감률 {avgSavingsRateDisplay.toFixed(1)}%
                 </div>
               </div>
             </div>

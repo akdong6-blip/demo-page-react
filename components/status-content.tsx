@@ -33,11 +33,23 @@ export function StatusContent() {
       console.log("[v0] 지역별 데이터:", regional.length, "개 지역")
 
       const businessMap = groupByBusinessType(data)
+      const siteMap = new Map<string, SiteData>()
+
+      // Create a map of site ID to site data (using first record of each site)
+      data.forEach((record) => {
+        if (!siteMap.has(record.ID_SITE)) {
+          siteMap.set(record.ID_SITE, record)
+        }
+      })
+
       const industry = Array.from(businessMap.entries())
-        .map(([category, sites]) => ({
+        .map(([category, siteIds]) => ({
           category,
-          sites: sites.length,
-          units: sites.reduce((sum, site) => sum + site.실내기대수, 0),
+          sites: siteIds.length,
+          units: siteIds.reduce((sum, siteId) => {
+            const siteData = siteMap.get(siteId)
+            return sum + (siteData?.실내기대수 || 0)
+          }, 0),
         }))
         .sort((a, b) => b.sites - a.sites)
       setIndustryData(industry)
@@ -56,6 +68,12 @@ export function StatusContent() {
     if (category.includes("상업") || category.includes("문화") || category.includes("상가")) return ShoppingBag
     if (category.includes("공공") || category.includes("종교")) return Landmark
     if (category.includes("숙박") || category.includes("호텔")) return Hotel
+    if (category.includes("병원")) return Building2
+    if (category.includes("유치원")) return School
+    if (category.includes("학원")) return GraduationCap
+    if (category.includes("금융")) return Landmark
+    if (category.includes("연구소") || category.includes("연수원")) return GraduationCap
+    if (category.includes("유통") || category.includes("체육")) return ShoppingBag
     return Building2
   }
 
@@ -85,7 +103,7 @@ export function StatusContent() {
           전국 {stats.totalSites.toLocaleString()}개 현장에서 BECON cloud를 이용해 에너지를 절감하고 있습니다
         </p>
         <p className="text-sm text-muted-foreground/70 font-lg-regular italic">
-          * 2024년 데이터를 기반으로 작성되었습니다
+          * 데이터 출처: 2024년 개시 현장 중, 개시일부터 12개월간의 현장 실측 결과
         </p>
       </div>
 

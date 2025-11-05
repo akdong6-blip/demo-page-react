@@ -20,7 +20,7 @@ export default function RootLayout({
     <html lang="ko">
       <body className="font-sans">
         <Suspense fallback={null}>{children}</Suspense>
-        <Analytics />
+        {process.env.NODE_ENV === "production" && <Analytics />}
         <Toaster />
       </body>
     </html>
