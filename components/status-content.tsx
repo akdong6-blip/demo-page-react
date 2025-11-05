@@ -127,7 +127,9 @@ export function StatusContent() {
         <Card className="shadow-lg">
           <CardContent className="p-8">
             <div className="text-sm text-muted-foreground mb-2 font-lg-regular">절감량</div>
-            <div className="text-4xl font-lg-bold text-chart-5">{stats.totalSavingsAmount.toLocaleString()}</div>
+            <div className="text-4xl font-lg-bold text-chart-5">
+              {Math.round(stats.totalSavingsAmount).toLocaleString()}
+            </div>
             <div className="text-sm text-muted-foreground mt-1 font-lg-regular">kWh</div>
           </CardContent>
         </Card>
@@ -135,7 +137,9 @@ export function StatusContent() {
         <Card className="shadow-lg">
           <CardContent className="p-8">
             <div className="text-sm text-muted-foreground mb-2 font-lg-regular">절감 금액</div>
-            <div className="text-4xl font-lg-bold text-chart-3">{stats.totalSavingsCost.toLocaleString()}</div>
+            <div className="text-4xl font-lg-bold text-chart-3">
+              {Math.round(stats.totalSavingsCost).toLocaleString()}
+            </div>
             <div className="text-sm text-muted-foreground mt-1 font-lg-regular">원</div>
           </CardContent>
         </Card>

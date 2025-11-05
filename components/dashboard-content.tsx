@@ -275,7 +275,7 @@ export function DashboardContent() {
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감금액</div>
-                <div className="text-xl font-lg-bold">₩{avgSavingsCost.toLocaleString()}</div>
+                <div className="text-xl font-lg-bold">₩{avgSavingsCostPerSite.toLocaleString()}</div>
               </div>
             </div>
           </div>
