@@ -41,6 +41,7 @@ export function DashboardContent() {
   const [selectedScales, setSelectedScales] = useState<string[]>([])
   const [isBusinessTypeOpen, setIsBusinessTypeOpen] = useState(false)
   const [isScaleOpen, setIsScaleOpen] = useState(false)
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
   const [displayMode, setDisplayMode] = useState<"annual" | "monthly">("annual")
 
   useEffect(() => {
@@ -275,98 +276,7 @@ export function DashboardContent() {
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감금액</div>
-                <div className="text-xl font-lg-bold">₩{avgSavingsCostPerSite.toLocaleString()}</div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border border-gray-200 shadow-sm">
-        <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금 계산기</CardTitle>
-            <div className="flex gap-1 bg-muted rounded-lg p-1">
-              <Button
-                variant={displayMode === "annual" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setDisplayMode("annual")}
-                className={`h-7 px-3 text-xs ${
-                  displayMode === "annual" ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90" : "hover:bg-transparent"
-                }`}
-              >
-                연간
-              </Button>
-              <Button
-                variant={displayMode === "monthly" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setDisplayMode("monthly")}
-                className={`h-7 px-3 text-xs ${
-                  displayMode === "monthly" ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90" : "hover:bg-transparent"
-                }`}
-              >
-                월간
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* 요금제 선택 */}
-            <div>
-              <label className="text-xs md:text-sm font-medium mb-2 block">요금제 선택</label>
-              <select
-                className="w-full px-3 md:px-4 py-2 bg-card border border-border rounded-lg text-xs md:text-sm"
-                value={selectedRate}
-                onChange={(e) => setSelectedRate(e.target.value as keyof typeof electricityRates)}
-              >
-                {Object.entries(electricityRates).map(([key, value]) => (
-                  <option key={key} value={key}>
-                    {value.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-              <div className="p-3 md:p-4 bg-muted rounded-lg">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
-                  절감 전 전기요금 ({displayMode === "annual" ? "연간" : "월간"})
-                </div>
-                <div className="text-xl md:text-2xl font-lg-bold text-destructive">
-                  ₩{avgBeforeCostPerSite.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                  {stats.totalSites > 0
-                    ? Math.round(stats.totalBeforePower / stats.totalSites / divisor).toLocaleString()
-                    : 0}{" "}
-                  kWh
-                </div>
-              </div>
-              <div className="p-3 md:p-4 bg-muted rounded-lg">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
-                  절감 후 전기요금 ({displayMode === "annual" ? "연간" : "월간"})
-                </div>
-                <div className="text-xl md:text-2xl font-lg-bold text-primary">
-                  ₩{avgAfterCostPerSite.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                  {stats.totalSites > 0
-                    ? Math.round(stats.totalAfterPower / stats.totalSites / divisor).toLocaleString()
-                    : 0}{" "}
-                  kWh
-                </div>
-              </div>
-              <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-gray-200">
-                <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
-                  총 절감 금액 ({displayMode === "annual" ? "연간" : "월간"})
-                </div>
-                <div className="text-xl md:text-2xl font-lg-bold text-chart-2">
-                  ₩{avgSavingsCostPerSite.toLocaleString()}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                  절감률 {avgSavingsRateDisplay.toFixed(1)}%
-                </div>
+                <div className="text-xl font-lg-bold">₩{avgSavingsCost.toLocaleString()}</div>
               </div>
             </div>
           </div>
@@ -446,13 +356,123 @@ export function DashboardContent() {
       </Card>
 
       <Card className="border border-gray-200 shadow-sm">
+        <Collapsible open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+          <CollapsibleTrigger className="w-full">
+            <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10 hover:from-[#8B1538]/10 hover:to-[#8B1538]/15 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금 계산기</CardTitle>
+                <ChevronDown
+                  className={`w-5 h-5 text-muted-foreground transition-transform ${isCalculatorOpen ? "rotate-180" : ""}`}
+                />
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                {/* 연간/월간 토글 */}
+                <div className="flex justify-end">
+                  <div className="flex gap-1 bg-muted rounded-lg p-1">
+                    <Button
+                      variant={displayMode === "annual" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setDisplayMode("annual")}
+                      className={`h-7 px-3 text-xs ${
+                        displayMode === "annual"
+                          ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90"
+                          : "hover:bg-transparent"
+                      }`}
+                    >
+                      연간
+                    </Button>
+                    <Button
+                      variant={displayMode === "monthly" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setDisplayMode("monthly")}
+                      className={`h-7 px-3 text-xs ${
+                        displayMode === "monthly"
+                          ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90"
+                          : "hover:bg-transparent"
+                      }`}
+                    >
+                      월간
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 요금제 선택 */}
+                <div>
+                  <label className="text-xs md:text-sm font-medium mb-2 block">요금제 선택</label>
+                  <select
+                    className="w-full px-3 md:px-4 py-2 bg-card border border-border rounded-lg text-xs md:text-sm"
+                    value={selectedRate}
+                    onChange={(e) => setSelectedRate(e.target.value as keyof typeof electricityRates)}
+                  >
+                    {Object.entries(electricityRates).map(([key, value]) => (
+                      <option key={key} value={key}>
+                        {value.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                  <div className="p-3 md:p-4 bg-muted rounded-lg">
+                    <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
+                      절감 전 전기요금 ({displayMode === "annual" ? "연간" : "월간"})
+                    </div>
+                    <div className="text-xl md:text-2xl font-lg-bold text-destructive">
+                      ₩{avgBeforeCostPerSite.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
+                      {stats.totalSites > 0
+                        ? Math.round(stats.totalBeforePower / stats.totalSites / divisor).toLocaleString()
+                        : 0}{" "}
+                      kWh
+                    </div>
+                  </div>
+                  <div className="p-3 md:p-4 bg-muted rounded-lg">
+                    <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
+                      절감 후 전기요금 ({displayMode === "annual" ? "연간" : "월간"})
+                    </div>
+                    <div className="text-xl md:text-2xl font-lg-bold text-primary">
+                      ₩{avgAfterCostPerSite.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
+                      {stats.totalSites > 0
+                        ? Math.round(stats.totalAfterPower / stats.totalSites / divisor).toLocaleString()
+                        : 0}{" "}
+                      kWh
+                    </div>
+                  </div>
+                  <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-gray-200">
+                    <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
+                      총 절감 금액 ({displayMode === "annual" ? "연간" : "월간"})
+                    </div>
+                    <div className="text-xl md:text-2xl font-lg-bold text-chart-2">
+                      ₩{avgSavingsCostPerSite.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
+                      절감률 {avgSavingsRateDisplay.toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+
+      <Card className="border border-gray-200 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금표</CardTitle>
-          <p className="text-xs md:text-sm text-muted-foreground mt-1">
-            {selectedCategory === "industrial" && "산업용전력(갑) I 요금제가 선택되었습니다"}
-            {selectedCategory === "general" && "일반용전력(갑) I 요금제가 선택되었습니다"}
-            {selectedCategory === "education" && "교육용전력(갑) 요금제가 선택되었습니다"}
-          </p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금표</CardTitle>
+            <p className="text-xs md:text-sm text-muted-foreground mt-1">
+              {selectedCategory === "industrial" && "산업용전력(갑) I 요금제가 선택되었습니다"}
+              {selectedCategory === "general" && "일반용전력(갑) I 요금제가 선택되었습니다"}
+              {selectedCategory === "education" && "교육용전력(갑) 요금제가 선택되었습니다"}
+            </p>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">

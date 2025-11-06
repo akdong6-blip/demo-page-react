@@ -10,7 +10,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 export function StatusContent() {
   const [siteData, setSiteData] = useState<SiteData[]>([])
   const [regionalData, setRegionalData] = useState<Array<{ region: string; sites: number; percentage: number }>>([])
-  const [industryData, setIndustryData] = useState<Array<{ category: string; sites: number; units: number }>>([])
+  const [industryData, setIndustryData] = useState<
+    Array<{ category: string; sites: number; totalSavingsAmount: number; totalSavingsCost: number }>
+  >([])
   const [isChartsOpen, setIsChartsOpen] = useState(false)
 
   useEffect(() => {
@@ -33,27 +35,35 @@ export function StatusContent() {
       console.log("[v0] 지역별 데이터:", regional.length, "개 지역")
 
       const businessMap = groupByBusinessType(data)
-      const siteMap = new Map<string, SiteData>()
-
-      // Create a map of site ID to site data (using first record of each site)
-      data.forEach((record) => {
-        if (!siteMap.has(record.ID_SITE)) {
-          siteMap.set(record.ID_SITE, record)
-        }
-      })
 
       const industry = Array.from(businessMap.entries())
-        .map(([category, siteIds]) => ({
-          category,
-          sites: siteIds.length,
-          units: siteIds.reduce((sum, siteId) => {
-            const siteData = siteMap.get(siteId)
-            return sum + (siteData?.실내기대수 || 0)
-          }, 0),
-        }))
+        .map(([category, siteIds]) => {
+          // Get all records for this business type
+          const businessRecords = data.filter((record) => siteIds.includes(record.ID_SITE))
+
+          // Sum up savings amount and cost from all records
+          const totalSavingsAmount = businessRecords.reduce((sum, record) => sum + record.절감량, 0)
+          const totalSavingsCost = businessRecords.reduce((sum, record) => sum + record.절감비용, 0)
+
+          console.log(
+            `[v0] 업태별 - ${category}: ${siteIds.length}개 현장, ${businessRecords.length}개 레코드, 절감량 ${totalSavingsAmount.toFixed(2)} kWh, 절감비용 ₩${totalSavingsCost.toFixed(2)}`,
+          )
+
+          return {
+            category,
+            sites: siteIds.length,
+            totalSavingsAmount,
+            totalSavingsCost,
+          }
+        })
         .sort((a, b) => b.sites - a.sites)
       setIndustryData(industry)
       console.log("[v0] 업태별 데이터:", industry.length, "개 업태")
+
+      // Log totals for verification
+      const totalSavings = industry.reduce((sum, item) => sum + item.totalSavingsAmount, 0)
+      const totalCost = industry.reduce((sum, item) => sum + item.totalSavingsCost, 0)
+      console.log(`[v0] 업태별 총합 - 절감량: ${totalSavings.toFixed(2)} kWh, 절감비용: ₩${totalCost.toFixed(2)}`)
     }
     loadData()
   }, [])
@@ -141,6 +151,7 @@ export function StatusContent() {
               {Math.round(stats.totalSavingsCost).toLocaleString()}
             </div>
             <div className="text-sm text-muted-foreground mt-1 font-lg-regular">원</div>
+            <div className="text-xs text-muted-foreground/70 mt-2 font-lg-regular italic">* 에너지 리포트 기준</div>
           </CardContent>
         </Card>
 
@@ -203,12 +214,18 @@ export function StatusContent() {
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground font-lg-regular">현장</span>
+                        <span className="text-muted-foreground font-lg-regular">현장수</span>
                         <span className="font-lg-regular">{stat.sites} site</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground font-lg-regular">실내기</span>
-                        <span className="font-lg-regular">{stat.units}대</span>
+                        <span className="text-muted-foreground font-lg-regular">절감량(총합)</span>
+                        <span className="font-lg-regular">
+                          {Math.round(stat.totalSavingsAmount).toLocaleString()} kWh
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground font-lg-regular">절감금액(총합)</span>
+                        <span className="font-lg-regular">₩{Math.round(stat.totalSavingsCost).toLocaleString()}</span>
                       </div>
                     </div>
                   </CardContent>
