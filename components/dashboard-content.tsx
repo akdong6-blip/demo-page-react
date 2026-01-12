@@ -284,27 +284,29 @@ export function DashboardContent() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-lg-bold text-muted-foreground">현장별 월평균</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200">
-              <div>
-                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감량</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200">
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground font-lg-regular">평균 절감량</div>
                 <div className="text-xl font-lg-bold">{avgSavingsAmount.toLocaleString()} kWh</div>
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감률</div>
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground font-lg-regular">평균 절감률</div>
                 <div className="text-xl font-lg-bold">{avgSavingsRate.toFixed(1)}%</div>
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">월 평균 절감금액</div>
-                <div className="flex items-baseline gap-2">
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground font-lg-regular whitespace-nowrap">월 평균 절감금액</div>
+                <div className="flex flex-col gap-0.5">
                   <span className="text-xl font-lg-bold">₩{avgSavingsCost.toLocaleString()}</span>
                   <span className="text-xs text-muted-foreground font-lg-regular">
                     연 환산 ₩{(avgSavingsCost * 12).toLocaleString()}
                   </span>
                 </div>
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">월 평균 실내기당 절감금액</div>
-                <div className="flex items-baseline gap-2">
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground font-lg-regular whitespace-nowrap">
+                  월 평균 실내기당 절감금액
+                </div>
+                <div className="flex flex-col gap-0.5">
                   <span className="text-xl font-lg-bold">₩{avgSavingsCostPerIndoorUnit.toLocaleString()}</span>
                   <span className="text-xs text-muted-foreground font-lg-regular">
                     연 환산 ₩{(avgSavingsCostPerIndoorUnit * 12).toLocaleString()}

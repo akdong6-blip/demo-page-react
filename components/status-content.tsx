@@ -221,23 +221,28 @@ export function StatusContent() {
               <div>
                 <h4 className="font-lg-bold text-lg mb-4">업종별 현장수</h4>
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={industryData} margin={{ top: 60, right: 20, left: 20, bottom: 80 }}>
+                  <BarChart data={industryData} margin={{ top: 60, right: 10, left: 10, bottom: 100 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis
                       dataKey="category"
                       angle={-45}
                       textAnchor="end"
-                      height={100}
-                      tick={{ fontSize: 12, fill: "#4a5568" }}
+                      height={120}
+                      tick={{ fontSize: 11, fill: "#4a5568" }}
                       interval={0}
                     />
-                    <YAxis tick={{ fontSize: 12, fill: "#4a5568" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "#4a5568" }} width={45} />
                     <Tooltip
                       formatter={(value: number, name: string, props: any) => {
                         const item = industryData.find((d) => d.sites === value)
                         return [`${value}개 (${item?.percentage.toFixed(1) || "0.0"}%)`, "현장 수"]
                       }}
-                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
                     />
                     <Bar dataKey="sites" radius={[8, 8, 0, 0]} barSize={50}>
                       {industryData.map((entry, index) => (
@@ -253,7 +258,6 @@ export function StatusContent() {
                         position="top"
                         content={(props: any) => {
                           const { x, y, width, value, index } = props
-                          // 동일한 industryData의 percentage 사용
                           const percentage = industryData[index]?.percentage.toFixed(1) || "0.0"
                           return (
                             <g>
@@ -263,7 +267,7 @@ export function StatusContent() {
                                 fill="#1a202c"
                                 textAnchor="middle"
                                 dominantBaseline="middle"
-                                fontSize={14}
+                                fontSize={13}
                                 fontWeight="bold"
                               >
                                 {value}
@@ -274,7 +278,7 @@ export function StatusContent() {
                                 fill="#4a5568"
                                 textAnchor="middle"
                                 dominantBaseline="middle"
-                                fontSize={11}
+                                fontSize={10}
                               >
                                 {percentage}%
                               </text>
@@ -290,24 +294,30 @@ export function StatusContent() {
               <div>
                 <h4 className="font-lg-bold text-lg mb-4">업종별 절감률</h4>
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={industryData} margin={{ top: 60, right: 20, left: 20, bottom: 80 }}>
+                  <BarChart data={industryData} margin={{ top: 60, right: 10, left: 10, bottom: 100 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis
                       dataKey="category"
                       angle={-45}
                       textAnchor="end"
-                      height={100}
-                      tick={{ fontSize: 12, fill: "#4a5568" }}
+                      height={120}
+                      tick={{ fontSize: 11, fill: "#4a5568" }}
                       interval={0}
                     />
                     <YAxis
-                      tick={{ fontSize: 12, fill: "#4a5568" }}
+                      tick={{ fontSize: 11, fill: "#4a5568" }}
+                      width={45}
                       domain={[0, "auto"]}
                       tickFormatter={(value) => `${value}%`}
                     />
                     <Tooltip
                       formatter={(value: number) => [`${value.toFixed(1)}%`, "평균 절감률"]}
-                      contentStyle={{ backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "8px" }}
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
                     />
                     <Bar dataKey="avgSavingsRate" radius={[8, 8, 0, 0]} barSize={50} fill="#10b981">
                       <LabelList
@@ -322,7 +332,7 @@ export function StatusContent() {
                               fill="#1a202c"
                               textAnchor="middle"
                               dominantBaseline="middle"
-                              fontSize={14}
+                              fontSize={13}
                               fontWeight="bold"
                             >
                               {value?.toFixed(1)}%
