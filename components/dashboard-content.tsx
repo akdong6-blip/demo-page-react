@@ -10,9 +10,11 @@ import {
   type SiteData,
   filterByBusinessType,
   filterByScale,
+  filterByLogicVersion,
   calculateTotalStats,
   BUSINESS_TYPES,
   SCALES,
+  LOGIC_VERSIONS,
 } from "@/lib/csv-parser"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -39,10 +41,11 @@ export function DashboardContent() {
   const [filteredData, setFilteredData] = useState<SiteData[]>([])
   const [selectedBusinessTypes, setSelectedBusinessTypes] = useState<string[]>([])
   const [selectedScales, setSelectedScales] = useState<string[]>([])
+  const [selectedLogicVersions, setSelectedLogicVersions] = useState<number[]>([])
   const [isBusinessTypeOpen, setIsBusinessTypeOpen] = useState(false)
   const [isScaleOpen, setIsScaleOpen] = useState(false)
+  const [isLogicOpen, setIsLogicOpen] = useState(false)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
-  const [displayMode, setDisplayMode] = useState<"annual" | "monthly">("annual")
 
   useEffect(() => {
     const loadData = async () => {
@@ -65,9 +68,13 @@ export function DashboardContent() {
       filtered = filterByScale(filtered, selectedScales)
     }
 
+    if (selectedLogicVersions.length > 0) {
+      filtered = filterByLogicVersion(filtered, selectedLogicVersions)
+    }
+
     setFilteredData(filtered)
     console.log("[v0] 필터 적용됨:", filtered.length, "개 레코드")
-  }, [selectedBusinessTypes, selectedScales, allSiteData])
+  }, [selectedBusinessTypes, selectedScales, selectedLogicVersions, allSiteData])
 
   const handleBusinessTypeToggle = (type: string) => {
     setSelectedBusinessTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
@@ -77,12 +84,10 @@ export function DashboardContent() {
     setSelectedScales((prev) => (prev.includes(scale) ? prev.filter((s) => s !== scale) : [...prev, scale]))
   }
 
-  const handleResetBusinessTypes = () => {
-    setSelectedBusinessTypes([])
-  }
-
-  const handleResetScales = () => {
-    setSelectedScales([])
+  const handleLogicVersionToggle = (version: number) => {
+    setSelectedLogicVersions((prev) =>
+      prev.includes(version) ? prev.filter((v) => v !== version) : [...prev, version],
+    )
   }
 
   const getSeasonRate = (month: number) => {
@@ -97,36 +102,30 @@ export function DashboardContent() {
       : electricityRates[selectedRate].summer
 
   const stats = calculateTotalStats(filteredData)
-  const divisor = displayMode === "annual" ? 1 : 12
 
-  const avgSavingsAmount = stats.totalSites > 0 ? Math.round(stats.totalSavingsAmount / stats.totalSites / divisor) : 0
-  const avgSavingsCost = stats.totalSites > 0 ? Math.round(stats.totalSavingsCost / stats.totalSites / divisor) : 0
+  const avgSavingsAmount = stats.perSiteStats.avgMonthlyAmountPerSite
+  const avgSavingsCost = stats.perSiteStats.avgMonthlyCostPerSite
+  const avgSavingsCostPerIndoorUnit = stats.perSiteStats.avgMonthlyCostPerIndoorUnit
+  const avgSavingsRate = stats.perSiteStats.avgSavingsRate
+
+  console.log("[v0] 대시보드 통계:")
+  console.log("[v0] - 현장당 월평균 절감량:", avgSavingsAmount, "kWh")
+  console.log("[v0] - 현장당 월평균 절감금액:", avgSavingsCost, "원")
+  console.log("[v0] - 실내기당 월평균 절감금액:", avgSavingsCostPerIndoorUnit, "원")
+  console.log("[v0] - 평균 절감률:", avgSavingsRate.toFixed(1), "%")
 
   const avgBeforeCostPerSite =
-    stats.totalSites > 0 ? Math.round((stats.totalBeforePower * avgRate) / stats.totalSites / divisor) : 0
+    stats.totalSites > 0 ? Math.round((stats.totalBeforePower * avgRate) / stats.totalSites) : 0
   const avgAfterCostPerSite =
-    stats.totalSites > 0 ? Math.round((stats.totalAfterPower * avgRate) / stats.totalSites / divisor) : 0
+    stats.totalSites > 0 ? Math.round((stats.totalAfterPower * avgRate) / stats.totalSites) : 0
   const avgSavingsCostPerSite = avgBeforeCostPerSite - avgAfterCostPerSite
-
-  const avgSavingsRateDisplay = stats.avgSavingsRate
-
-  const getRateCategory = (rateKey: string) => {
-    if (rateKey.startsWith("industrial")) return "industrial"
-    if (rateKey.startsWith("general")) return "general"
-    if (rateKey.startsWith("education")) return "education"
-    return ""
-  }
-
-  const selectedCategory = getRateCategory(selectedRate)
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-lg-bold text-foreground">대시보드</h2>
-          <p className="text-xs text-muted-foreground/70 font-lg-regular italic mt-1">
-            * 데이터 출처: 2024년 개시 현장 중, 개시일부터 12개월간의 현장 실측 결과
-          </p>
+          <p className="text-xs text-muted-foreground/70 font-lg-regular italic mt-1">* 월별 절감데이터 기준</p>
         </div>
       </div>
 
@@ -140,6 +139,7 @@ export function DashboardContent() {
               onClick={() => {
                 setSelectedBusinessTypes([])
                 setSelectedScales([])
+                setSelectedLogicVersions([])
               }}
               className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground"
             >
@@ -238,45 +238,78 @@ export function DashboardContent() {
             </div>
           </Collapsible>
 
-          {/* 통계 요약 */}
+          <Collapsible open={isLogicOpen} onOpenChange={setIsLogicOpen}>
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+              <CollapsibleTrigger className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="font-lg-bold text-sm">로직버전</span>
+                  <span className="text-xs text-muted-foreground font-lg-regular">
+                    {selectedLogicVersions.length === 0
+                      ? "(전체 데이터)"
+                      : `(${selectedLogicVersions.length}개 선택됨)`}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${isLogicOpen ? "rotate-180" : ""}`}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="px-4 py-3 border-t border-gray-200 bg-muted/30">
+                  <div className="flex flex-wrap gap-2">
+                    {LOGIC_VERSIONS.map((version) => (
+                      <label
+                        key={version}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer transition-all ${
+                          selectedLogicVersions.includes(version)
+                            ? "bg-[#8B1538] text-white border-[#8B1538]"
+                            : "bg-white border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <Checkbox
+                          id={`logic-${version}`}
+                          checked={selectedLogicVersions.includes(version)}
+                          onCheckedChange={() => handleLogicVersionToggle(version)}
+                          className="hidden"
+                        />
+                        <span className="text-sm font-lg-regular">로직 {version}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
           <div className="space-y-3 mt-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-lg-bold text-muted-foreground">현장별 평균</span>
-              <div className="flex gap-1 bg-muted rounded-lg p-1">
-                <Button
-                  variant={displayMode === "annual" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setDisplayMode("annual")}
-                  className={`h-7 px-3 text-xs ${
-                    displayMode === "annual" ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90" : "hover:bg-transparent"
-                  }`}
-                >
-                  연간
-                </Button>
-                <Button
-                  variant={displayMode === "monthly" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setDisplayMode("monthly")}
-                  className={`h-7 px-3 text-xs ${
-                    displayMode === "monthly" ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90" : "hover:bg-transparent"
-                  }`}
-                >
-                  월간
-                </Button>
-              </div>
+              <span className="text-sm font-lg-bold text-muted-foreground">현장별 월평균</span>
             </div>
-            <div className="grid grid-cols-3 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200">
               <div>
                 <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감량</div>
                 <div className="text-xl font-lg-bold">{avgSavingsAmount.toLocaleString()} kWh</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감률</div>
-                <div className="text-xl font-lg-bold">{stats.avgSavingsRate.toFixed(1)}%</div>
+                <div className="text-xl font-lg-bold">{avgSavingsRate.toFixed(1)}%</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">평균 절감금액</div>
-                <div className="text-xl font-lg-bold">₩{avgSavingsCost.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">월 평균 절감금액</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-lg-bold">₩{avgSavingsCost.toLocaleString()}</span>
+                  <span className="text-xs text-muted-foreground font-lg-regular">
+                    연 환산 ₩{(avgSavingsCost * 12).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1 font-lg-regular">월 평균 실내기당 절감금액</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-lg-bold">₩{avgSavingsCostPerIndoorUnit.toLocaleString()}</span>
+                  <span className="text-xs text-muted-foreground font-lg-regular">
+                    연 환산 ₩{(avgSavingsCostPerIndoorUnit * 12).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -370,36 +403,6 @@ export function DashboardContent() {
           <CollapsibleContent>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                {/* 연간/월간 토글 */}
-                <div className="flex justify-end">
-                  <div className="flex gap-1 bg-muted rounded-lg p-1">
-                    <Button
-                      variant={displayMode === "annual" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setDisplayMode("annual")}
-                      className={`h-7 px-3 text-xs ${
-                        displayMode === "annual"
-                          ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90"
-                          : "hover:bg-transparent"
-                      }`}
-                    >
-                      연간
-                    </Button>
-                    <Button
-                      variant={displayMode === "monthly" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setDisplayMode("monthly")}
-                      className={`h-7 px-3 text-xs ${
-                        displayMode === "monthly"
-                          ? "bg-[#8B1538] text-white hover:bg-[#8B1538]/90"
-                          : "hover:bg-transparent"
-                      }`}
-                    >
-                      월간
-                    </Button>
-                  </div>
-                </div>
-
                 {/* 요금제 선택 */}
                 <div>
                   <label className="text-xs md:text-sm font-medium mb-2 block">요금제 선택</label>
@@ -419,41 +422,39 @@ export function DashboardContent() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                   <div className="p-3 md:p-4 bg-muted rounded-lg">
                     <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
-                      절감 전 전기요금 ({displayMode === "annual" ? "연간" : "월간"})
+                      절감 전 전기요금 (월평균)
                     </div>
                     <div className="text-xl md:text-2xl font-lg-bold text-destructive">
                       ₩{avgBeforeCostPerSite.toLocaleString()}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
                       {stats.totalSites > 0
-                        ? Math.round(stats.totalBeforePower / stats.totalSites / divisor).toLocaleString()
+                        ? Math.round(stats.totalBeforePower / stats.totalSites).toLocaleString()
                         : 0}{" "}
                       kWh
                     </div>
                   </div>
                   <div className="p-3 md:p-4 bg-muted rounded-lg">
                     <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
-                      절감 후 전기요금 ({displayMode === "annual" ? "연간" : "월간"})
+                      절감 후 전기요금 (월평균)
                     </div>
-                    <div className="text-xl md:text-2xl font-lg-bold text-primary">
+                    <div className="text-xl md:text-2xl font-lg-bold text-chart-2">
                       ₩{avgAfterCostPerSite.toLocaleString()}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                      {stats.totalSites > 0
-                        ? Math.round(stats.totalAfterPower / stats.totalSites / divisor).toLocaleString()
-                        : 0}{" "}
+                      {stats.totalSites > 0 ? Math.round(stats.totalAfterPower / stats.totalSites).toLocaleString() : 0}{" "}
                       kWh
                     </div>
                   </div>
-                  <div className="p-3 md:p-4 bg-chart-2/10 rounded-lg border-2 border-gray-200">
+                  <div className="p-3 md:p-4 bg-muted rounded-lg">
                     <div className="text-xs md:text-sm text-muted-foreground mb-1 font-lg-regular">
-                      총 절감 금액 ({displayMode === "annual" ? "연간" : "월간"})
+                      총 절감 금액 (월평균)
                     </div>
-                    <div className="text-xl md:text-2xl font-lg-bold text-chart-2">
+                    <div className="text-xl md:text-2xl font-lg-bold text-chart-3">
                       ₩{avgSavingsCostPerSite.toLocaleString()}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                      절감률 {avgSavingsRateDisplay.toFixed(1)}%
+                      절감률 {stats.avgSavingsRate.toFixed(1)}%
                     </div>
                   </div>
                 </div>
@@ -463,159 +464,34 @@ export function DashboardContent() {
         </Collapsible>
       </Card>
 
-      <Card className="border border-gray-200 shadow-sm">
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금표</CardTitle>
-            <p className="text-xs md:text-sm text-muted-foreground mt-1">
-              {selectedCategory === "industrial" && "산업용전력(갑) I 요금제가 선택되었습니다"}
-              {selectedCategory === "general" && "일반용전력(갑) I 요금제가 선택되었습니다"}
-              {selectedCategory === "education" && "교육용전력(갑) 요금제가 선택되었습니다"}
-            </p>
-          </div>
+      <Card className="border border-gray-200 shadow-sm overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10">
+          <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금표 (kWh당)</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className={selectedCategory === "industrial" ? "ring-2 ring-primary rounded-lg p-4" : ""}>
-              <h4 className="font-semibold mb-3 text-sm md:text-base">산업용전력(갑) I</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs md:text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-2">구분</th>
-                      <th className="text-right p-2">기본요금(원/kW)</th>
-                      <th className="text-right p-2">여름철(6~8월)</th>
-                      <th className="text-right p-2">봄·가을철(3~5월, 9~10월)</th>
-                      <th className="text-right p-2">겨울철(11~2월)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "industrial_low" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="p-2">저압</td>
-                      <td className="text-right p-2">5,550</td>
-                      <td className="text-right p-2">107.7</td>
-                      <td className="text-right p-2">68.1</td>
-                      <td className="text-right p-2">109.7</td>
-                    </tr>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "industrial_highA1" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="p-2" rowSpan={2}>
-                        고압A
-                      </td>
-                      <td className="text-right p-2">6,490</td>
-                      <td className="text-right p-2">116.3</td>
-                      <td className="text-right p-2">92.6</td>
-                      <td className="text-right p-2">116.2</td>
-                    </tr>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "industrial_highA2" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="text-right p-2">7,470</td>
-                      <td className="text-right p-2">111.5</td>
-                      <td className="text-right p-2">88.0</td>
-                      <td className="text-right p-2">109.7</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className={selectedCategory === "general" ? "ring-2 ring-primary rounded-lg p-4" : ""}>
-              <h4 className="font-semibold mb-3 text-sm md:text-base">일반용전력(갑) I</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs md:text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-2">구분</th>
-                      <th className="text-right p-2">기본요금(원/kW)</th>
-                      <th className="text-right p-2">여름철(6~8월)</th>
-                      <th className="text-right p-2">봄·가을철(3~5월, 9~10월)</th>
-                      <th className="text-right p-2">겨울철(11~2월)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "general_low" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="p-2">저압</td>
-                      <td className="text-right p-2">6,160</td>
-                      <td className="text-right p-2">132.4</td>
-                      <td className="text-right p-2">91.9</td>
-                      <td className="text-right p-2">119.0</td>
-                    </tr>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "general_highA1" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="p-2" rowSpan={2}>
-                        고압A
-                      </td>
-                      <td className="text-right p-2">7,170</td>
-                      <td className="text-right p-2">142.6</td>
-                      <td className="text-right p-2">98.6</td>
-                      <td className="text-right p-2">130.3</td>
-                    </tr>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "general_highA2" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="text-right p-2">8,230</td>
-                      <td className="text-right p-2">138.6</td>
-                      <td className="text-right p-2">94.3</td>
-                      <td className="text-right p-2">125.0</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className={selectedCategory === "education" ? "ring-2 ring-primary rounded-lg p-4" : ""}>
-              <h4 className="font-semibold mb-3 text-sm md:text-base">교육용전력(갑)</h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs md:text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-2">구분</th>
-                      <th className="text-right p-2">기본요금(원/kW)</th>
-                      <th className="text-right p-2">여름철(6~8월)</th>
-                      <th className="text-right p-2">봄·가을철(3~5월, 9~10월)</th>
-                      <th className="text-right p-2">겨울철(11~2월)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "education_low" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="p-2">저압</td>
-                      <td className="text-right p-2">5,200</td>
-                      <td className="text-right p-2">123.6</td>
-                      <td className="text-right p-2">86.4</td>
-                      <td className="text-right p-2">110.8</td>
-                    </tr>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "education_highA1" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="p-2" rowSpan={2}>
-                        고압A
-                      </td>
-                      <td className="text-right p-2">6,080</td>
-                      <td className="text-right p-2">123.3</td>
-                      <td className="text-right p-2">86.5</td>
-                      <td className="text-right p-2">109.3</td>
-                    </tr>
-                    <tr
-                      className={`border-b border-border/50 ${selectedRate === "education_highA2" ? "bg-primary/10" : ""}`}
-                    >
-                      <td className="text-right p-2">6,370</td>
-                      <td className="text-right p-2">118.8</td>
-                      <td className="text-right p-2">82.1</td>
-                      <td className="text-right p-2">104.9</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs md:text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="p-2 md:p-3 text-left font-lg-bold border-b">요금제</th>
+                  <th className="p-2 md:p-3 text-right font-lg-bold border-b">기본요금</th>
+                  <th className="p-2 md:p-3 text-right font-lg-bold border-b text-red-600">여름</th>
+                  <th className="p-2 md:p-3 text-right font-lg-bold border-b text-green-600">봄/가을</th>
+                  <th className="p-2 md:p-3 text-right font-lg-bold border-b text-blue-600">겨울</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(electricityRates).map(([key, rate]) => (
+                  <tr key={key} className={`border-b hover:bg-muted/30 ${selectedRate === key ? "bg-primary/10" : ""}`}>
+                    <td className="p-2 md:p-3 font-lg-regular">{rate.label}</td>
+                    <td className="p-2 md:p-3 text-right font-lg-regular">₩{rate.base.toLocaleString()}</td>
+                    <td className="p-2 md:p-3 text-right font-lg-regular text-red-600">₩{rate.summer}</td>
+                    <td className="p-2 md:p-3 text-right font-lg-regular text-green-600">₩{rate.spring}</td>
+                    <td className="p-2 md:p-3 text-right font-lg-regular text-blue-600">₩{rate.winter}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
