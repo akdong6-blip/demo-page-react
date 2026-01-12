@@ -133,7 +133,19 @@ export function filterByBusinessType(data: SiteData[], types: string[]): SiteDat
 
 export function filterByScale(data: SiteData[], scales: string[]): SiteData[] {
   if (scales.length === 0) return data
-  return data.filter((site) => {
+
+  console.log("[v0] 규모별 필터 적용 중:")
+  console.log("[v0] - 선택된 규모:", scales.join(", "))
+  console.log("[v0] - 필터 전 레코드 수:", data.length)
+
+  // 샘플 실내기 수량 확인
+  const sampleUnits = data.slice(0, 10).map((d) => ({
+    현장명: d.현장명,
+    실내기수량: d.실내기수량,
+  }))
+  console.log("[v0] - 샘플 실내기 수량:", JSON.stringify(sampleUnits))
+
+  const filtered = data.filter((site) => {
     const units = site.실내기수량
     if (scales.includes("소형") && units < 30) return true
     if (scales.includes("중소형") && units >= 30 && units < 50) return true
@@ -141,6 +153,19 @@ export function filterByScale(data: SiteData[], scales: string[]): SiteData[] {
     if (scales.includes("대형") && units >= 100) return true
     return false
   })
+
+  console.log("[v0] - 필터 후 레코드 수:", filtered.length)
+
+  // 각 규모별로 몇 개씩 필터링되었는지 확인
+  const scaleCount = {
+    소형: filtered.filter((d) => d.실내기수량 < 30).length,
+    중소형: filtered.filter((d) => d.실내기수량 >= 30 && d.실내기수량 < 50).length,
+    중형: filtered.filter((d) => d.실내기수량 >= 50 && d.실내기수량 < 100).length,
+    대형: filtered.filter((d) => d.실내기수량 >= 100).length,
+  }
+  console.log("[v0] - 규모별 레코드 수:", JSON.stringify(scaleCount))
+
+  return filtered
 }
 
 export function filterByLogicVersion(data: SiteData[], versions: number[]): SiteData[] {
