@@ -16,9 +16,11 @@ export interface SiteData {
   절감비용: number
   월: number
   연: number
-  절감률: number
-  업종구분: string
   그룹구분: string
+  컨텐츠구분: string
+  절감률: number
+  규모구분: string
+  업종구분: string
 }
 
 const CSV_URL = "/data/sites-data.csv"
@@ -37,107 +39,118 @@ export async function loadSiteData(): Promise<SiteData[]> {
 
     console.log("[v0] CSV 총 라인 수:", lines.length)
 
-    // 헤더 확인
+    // 헤더 분석
     if (lines.length > 0) {
-      console.log("[v0] CSV 헤더:", lines[0])
+      const headerValues = lines[0].split("\t")
+      console.log("[v0] 헤더 컬럼 수:", headerValues.length)
+      console.log("[v0] 헤더 첫 5개:", headerValues.slice(0, 5).join(" | "))
     }
 
-    // 첫 번째 데이터 행 확인
-    if (lines.length > 1) {
-      console.log("[v0] 첫 번째 데이터 행:", lines[1])
-    }
-
+    // 첫 번째 줄은 헤더이므로 건너뜀
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim()
       if (!line) continue
 
-      const values = line.split(",")
+      // 탭으로 분리
+      const values = line.split("\t")
 
-      if (values.length < 18) {
-        if (i < 5) {
-          console.log(`[v0] 라인 ${i} 컬럼 수 부족:`, values.length, "개")
-        }
+      // 첫 번째 줄 디버깅
+      if (i === 1) {
+        console.log("[v0] 첫 데이터 행 컬럼 수:", values.length)
+        console.log("[v0] 첫 5개 값:", values.slice(0, 5).join(" | "))
+        console.log("[v0] 컬럼 6-10:", values.slice(5, 10).join(" | "))
+        console.log("[v0] 마지막 5개 값:", values.slice(-5).join(" | "))
+      }
+
+      const firstVal = values[0]?.trim() || ""
+      const isFirstColumnRowNumber = /^\d+$/.test(firstVal)
+      const offset = isFirstColumnRowNumber ? 0 : -1 // 행번호가 없으면 인덱스를 1씩 감소
+
+      if (i === 1) {
+        console.log("[v0] 첫 번째 컬럼:", firstVal, "- 행번호 여부:", isFirstColumnRowNumber, "- 오프셋:", offset)
+      }
+
+      // 컬럼 수 체크 (최소 20개)
+      if (values.length < 20) {
+        if (i < 5) console.log("[v0] 컬럼 수 부족 (라인", i, "):", values.length)
         continue
       }
 
-      // CSV 컬럼 순서 (18개, 0-indexed):
-      // 0: 현장명, 1: ID_SITE, 2: 전기요금, 3: 분석일수, 4: MV5수량, 5: MVS수량,
-      // 6: 실내기수량, 7: 로직버전, 8: 절감사용량(Kwh), 9: 비절감절감량(Kwh),
-      // 10: 절감량(Kwh), 11: 절감금액(원), 12: 비절감금액(원), 13: 절감비용(원),
-      // 14: 월, 15: 연, 16: 절감률, 17: 업종구분
+      const idx = (base: number) => base + offset
 
-      const 업종구분 = values[17]?.trim() || ""
-
-      // 업종구분이 없거나 헤더인 경우 스킵
-      if (!업종구분 || 업종구분 === "업종구분" || 업종구분 === "0" || 업종구분 === "") continue
-
-      const 절감률Str = values[16]?.trim() || "0%"
+      // 절감률 파싱
       let 절감률 = 0
-      if (절감률Str !== "#DIV/0!" && 절감률Str !== "") {
+      const 절감률Str = values[idx(19)]?.trim() || ""
+      if (절감률Str && 절감률Str !== "#DIV/0!" && 절감률Str !== "") {
         절감률 = Number.parseFloat(절감률Str.replace("%", "")) || 0
       }
 
-      const 현장명 = values[0]?.trim() || ""
-      let 그룹구분 = "기타"
-      // Try to extract region from site name (e.g., "서울 XXX" -> "서울")
-      const regionMatch = 현장명.match(
-        /^(서울|경기|인천|부산|대구|광주|대전|울산|세종|강원|충북|충남|전북|전남|경북|경남|제주)/,
-      )
-      if (regionMatch) {
-        그룹구분 = regionMatch[1]
-      }
+      const 규모구분 = values[idx(20)]?.trim() || ""
+      const 업종구분 = values[idx(21)]?.trim() || values[values.length - 1]?.trim() || ""
+
+      // 업종구분이 없거나 헤더인 경우 스킵
+      if (!업종구분 || 업종구분 === "업종구분") continue
 
       const record: SiteData = {
-        No: i,
-        현장명: 현장명,
-        ID_SITE: values[1]?.trim() || "",
-        전기요금: values[2]?.trim() || "",
-        분석일수: Number.parseFloat(values[3]) || 0,
-        MV5수량: Number.parseFloat(values[4]) || 0,
-        MVS수량: Number.parseFloat(values[5]) || 0,
-        실내기수량: Number.parseInt(values[6]) || 0,
-        로직버전: Number.parseInt(values[7]) || 1,
-        절감사용량: Number.parseFloat(values[8]) || 0,
-        비절감절감량: Number.parseFloat(values[9]) || 0,
-        절감량: Number.parseFloat(values[10]) || 0,
-        절감금액: Number.parseFloat(values[11]) || 0,
-        비절감금액: Number.parseFloat(values[12]) || 0,
-        절감비용: Number.parseFloat(values[13]) || 0,
-        월: Number.parseInt(values[14]) || 0,
-        연: Number.parseInt(values[15]) || 0,
+        No: isFirstColumnRowNumber ? Number.parseInt(values[0]?.trim()) || i : i,
+        현장명: values[idx(1)]?.trim() || "",
+        ID_SITE: values[idx(2)]?.trim() || "",
+        전기요금: values[idx(3)]?.trim() || "",
+        분석일수: Number.parseInt(values[idx(4)]) || 0,
+        MV5수량: Number.parseInt(values[idx(5)]) || 0,
+        MVS수량: Number.parseInt(values[idx(6)]) || 0,
+        실내기수량: Number.parseInt(values[idx(7)]) || 0,
+        로직버전: Number.parseInt(values[idx(8)]) || 1,
+        절감사용량: Number.parseFloat(values[idx(9)]) || 0,
+        비절감절감량: Number.parseFloat(values[idx(10)]) || 0,
+        절감량: Number.parseFloat(values[idx(11)]) || 0,
+        절감금액: Number.parseFloat(values[idx(12)]) || 0,
+        비절감금액: Number.parseFloat(values[idx(13)]) || 0,
+        절감비용: Number.parseFloat(values[idx(14)]) || 0,
+        월: Number.parseInt(values[idx(15)]) || 0,
+        연: Number.parseInt(values[idx(16)]) || 0,
+        그룹구분: values[idx(17)]?.trim() || "",
+        컨텐츠구분: values[idx(18)]?.trim() || "",
         절감률: 절감률,
+        규모구분: 규모구분,
         업종구분: 업종구분,
-        그룹구분: 그룹구분,
+      }
+
+      // 첫 번째 레코드 상세 디버깅
+      if (i === 1) {
+        console.log("[v0] 파싱된 첫 번째 레코드:")
+        console.log("[v0]   현장명:", record.현장명)
+        console.log("[v0]   ID_SITE:", record.ID_SITE)
+        console.log("[v0]   실내기수량:", record.실내기수량)
+        console.log("[v0]   로직버전:", record.로직버전)
+        console.log("[v0]   절감비용:", record.절감비용)
+        console.log("[v0]   월:", record.월, "연:", record.연)
+        console.log("[v0]   절감률:", record.절감률)
+        console.log("[v0]   규모구분:", record.규모구분)
+        console.log("[v0]   업종구분:", record.업종구분)
       }
 
       data.push(record)
     }
 
-    console.log("[v0] 파싱된 데이터 레코드 수:", data.length)
+    console.log("[v0] 파싱된 레코드 수:", data.length)
 
     if (data.length > 0) {
-      console.log("[v0] 첫 번째 레코드 샘플:", {
-        현장명: data[0].현장명,
-        ID_SITE: data[0].ID_SITE,
-        실내기수량: data[0].실내기수량,
-        로직버전: data[0].로직버전,
-        절감량: data[0].절감량,
-        절감비용: data[0].절감비용,
-        월: data[0].월,
-        연: data[0].연,
-        절감률: data[0].절감률,
-        업종구분: data[0].업종구분,
-        그룹구분: data[0].그룹구분,
-      })
-
       const uniqueBusinessTypes = [...new Set(data.map((d) => d.업종구분))].filter(Boolean)
-      console.log("[v0] 업종구분 종류:", uniqueBusinessTypes.join(", "))
+      console.log("[v0] 업종구분:", uniqueBusinessTypes.join(", "))
 
-      const uniqueLogicVersions = [...new Set(data.map((d) => d.로직버전))].filter(Boolean)
-      console.log("[v0] 로직버전 종류:", uniqueLogicVersions.join(", "))
+      const uniqueScales = [...new Set(data.map((d) => d.규모구분))].filter(Boolean)
+      console.log("[v0] 규모구분:", uniqueScales.join(", "))
 
-      const uniqueRegions = [...new Set(data.map((d) => d.그룹구분))].filter(Boolean)
-      console.log("[v0] 그룹구분 종류:", uniqueRegions.join(", "))
+      // 최신 연월 확인
+      const latestYear = Math.max(...data.map((d) => d.연))
+      const latestYearData = data.filter((d) => d.연 === latestYear)
+      const latestMonth = Math.max(...latestYearData.map((d) => d.월))
+      console.log("[v0] 최신 연월:", latestYear, "년", latestMonth, "월")
+
+      // 실내기수량 샘플
+      const sampleUnits = data.slice(0, 5).map((d) => d.실내기수량)
+      console.log("[v0] 실내기수량 샘플:", sampleUnits.join(", "))
     }
 
     return data
@@ -159,63 +172,17 @@ export function filterByBusinessType(data: SiteData[], types: string[]): SiteDat
 
 export function filterByScale(data: SiteData[], scales: string[]): SiteData[] {
   if (scales.length === 0) return data
-
-  console.log("[v0] 규모별 필터 적용 중:")
-  console.log("[v0] - 선택된 규모:", scales.join(", "))
-  console.log("[v0] - 필터 전 레코드 수:", data.length)
-
-  const sampleUnitsBefore = data.slice(0, 10).map((d) => ({
-    현장명: d.현장명,
-    실내기수량: d.실내기수량,
-  }))
-  console.log("[v0] - 필터 전 샘플 실내기 수량:", JSON.stringify(sampleUnitsBefore))
-
-  const filtered = data.filter((site) => {
-    const units = site.실내기수량
-    if (scales.includes("소형") && units < 30) return true
-    if (scales.includes("중소형") && units >= 30 && units < 50) return true
-    if (scales.includes("중형") && units >= 50 && units < 100) return true
-    if (scales.includes("대형") && units >= 100) return true
-    return false
-  })
-
-  console.log("[v0] - 필터 후 레코드 수:", filtered.length)
-
-  const sampleUnitsAfter = filtered.slice(0, 10).map((d) => ({
-    현장명: d.현장명,
-    실내기수량: d.실내기수량,
-  }))
-  console.log("[v0] - 필터 후 샘플 실내기 수량:", JSON.stringify(sampleUnitsAfter))
-
-  // 각 규모별로 몇 개씩 필터링되었는지 확인
-  const scaleCount = {
-    소형: filtered.filter((d) => d.실내기수량 < 30).length,
-    중소형: filtered.filter((d) => d.실내기수량 >= 30 && d.실내기수량 < 50).length,
-    중형: filtered.filter((d) => d.실내기수량 >= 50 && d.실내기수량 < 100).length,
-    대형: filtered.filter((d) => d.실내기수량 >= 100).length,
-  }
-  console.log("[v0] - 규모별 레코드 수:", JSON.stringify(scaleCount))
-
-  return filtered
+  // CSV의 "규모 구분" 컬럼 값을 직접 사용
+  return data.filter((site) => scales.includes(site.규모구분))
 }
 
 export function filterByLogicVersion(data: SiteData[], versions: number[]): SiteData[] {
   if (versions.length === 0) return data
-
-  console.log("[v0] 로직버전 필터 적용:")
-  console.log("[v0] - 선택된 로직버전:", versions.join(", "))
-  console.log("[v0] - 필터 전 레코드 수:", data.length)
-
-  const filtered = data.filter((site) => versions.includes(site.로직버전))
-
-  console.log("[v0] - 필터 후 레코드 수:", filtered.length)
-
-  return filtered
+  return data.filter((site) => versions.includes(site.로직버전))
 }
 
 export function groupBySite(data: SiteData[]): Map<string, SiteData[]> {
   const siteMap = new Map<string, SiteData[]>()
-
   data.forEach((record) => {
     const siteId = record.ID_SITE
     if (!siteMap.has(siteId)) {
@@ -223,27 +190,19 @@ export function groupBySite(data: SiteData[]): Map<string, SiteData[]> {
     }
     siteMap.get(siteId)!.push(record)
   })
-
   return siteMap
 }
 
 export function getLatestMonthSites(data: SiteData[]): Map<string, SiteData> {
   const siteMap = new Map<string, SiteData>()
-
   if (data.length === 0) return siteMap
 
   const validData = data.filter((d) => d.연 > 2000 && d.월 >= 1 && d.월 <= 12)
-
-  if (validData.length === 0) {
-    console.log("[v0] 유효한 연/월 데이터 없음")
-    return siteMap
-  }
+  if (validData.length === 0) return siteMap
 
   const latestYear = Math.max(...validData.map((d) => d.연))
   const latestYearData = validData.filter((d) => d.연 === latestYear)
   const latestMonth = Math.max(...latestYearData.map((d) => d.월))
-
-  console.log("[v0] 가장 최근 데이터:", `${latestYear}년 ${latestMonth}월`)
 
   validData
     .filter((d) => d.월 === latestMonth && d.연 === latestYear)
@@ -253,43 +212,21 @@ export function getLatestMonthSites(data: SiteData[]): Map<string, SiteData> {
       }
     })
 
-  console.log("[v0] 최근 월 현장 수:", siteMap.size)
   return siteMap
 }
 
 export function calculatePerSiteStats(data: SiteData[]) {
-  console.log("[v0] ===== calculatePerSiteStats 시작 =====")
-  console.log("[v0] 입력 데이터 레코드 수:", data.length)
-
   const siteGroups = groupBySite(data)
-
-  console.log("[v0] 유니크 현장 수:", siteGroups.size)
-
-  // 처음 5개 현장의 정보 출력
-  let sampleCount = 0
-  siteGroups.forEach((records, siteId) => {
-    if (sampleCount < 5) {
-      console.log(`[v0] 샘플 현장 ${sampleCount + 1}: ${records[0].현장명} (${siteId})`)
-      console.log(`[v0]   - 레코드 수: ${records.length}개`)
-      console.log(`[v0]   - 실내기: ${records[0].실내기수량}대`)
-      console.log(`[v0]   - 총 절감비용: ${records.reduce((sum, r) => sum + r.절감비용, 0)}원`)
-      console.log(
-        `[v0]   - 월평균 절감비용: ${Math.round(records.reduce((sum, r) => sum + r.절감비용, 0) / records.length)}원`,
-      )
-      sampleCount++
-    }
-  })
 
   let totalSiteMonthlyAvgCost = 0
   let totalSiteIndoorUnits = 0
   let totalSiteMonthlyAvgAmount = 0
-  let totalSavingsAmount = 0 // 전체 절감량 합계
-  let totalNonSavingsAmount = 0 // 전체 비절감절감량 합계
+  let totalSavingsAmount = 0
+  let totalNonSavingsAmount = 0
+  let grandTotalSavingsCost = 0
+  let grandTotalIndoorUnits = 0
 
-  let grandTotalSavingsCost = 0 // 전체 절감비용 합계 (월별 데이터 전부)
-  let grandTotalIndoorUnits = 0 // 전체 실내기 수 합계 (월별 데이터 전부)
-
-  siteGroups.forEach((records, siteId) => {
+  siteGroups.forEach((records) => {
     if (records.length === 0) return
 
     const indoorUnits = records[0].실내기수량
@@ -302,34 +239,18 @@ export function calculatePerSiteStats(data: SiteData[]) {
 
     totalSavingsAmount += totalAmount
     totalNonSavingsAmount += totalNonSavings
-
     totalSiteMonthlyAvgCost += monthlyAvgCost
     totalSiteMonthlyAvgAmount += monthlyAvgAmount
     totalSiteIndoorUnits += indoorUnits
-
     grandTotalSavingsCost += totalCost
-    grandTotalIndoorUnits += indoorUnits * monthCount // 실내기수 × 레코드(월) 수
+    grandTotalIndoorUnits += indoorUnits * monthCount
   })
 
   const siteCount = siteGroups.size
   const avgSavingsRate = totalNonSavingsAmount > 0 ? (totalSavingsAmount / totalNonSavingsAmount) * 100 : 0
   const avgMonthlyCostPerSite = siteCount > 0 ? totalSiteMonthlyAvgCost / siteCount : 0
   const avgMonthlyAmountPerSite = siteCount > 0 ? totalSiteMonthlyAvgAmount / siteCount : 0
-
   const avgMonthlyCostPerIndoorUnit = grandTotalIndoorUnits > 0 ? grandTotalSavingsCost / grandTotalIndoorUnits : 0
-
-  console.log("[v0] 현장별 통계 계산:")
-  console.log("[v0] - 총 현장 수:", siteCount)
-  console.log("[v0] - 총 실내기 수 (현장별 한 번):", totalSiteIndoorUnits)
-  console.log("[v0] - 총 절감비용 (전체 합계):", Math.round(grandTotalSavingsCost))
-  console.log("[v0] - 총 실내기 수 (전체 레코드 기준):", grandTotalIndoorUnits)
-  console.log("[v0] - 총 현장 월평균 절감비용 합계:", Math.round(totalSiteMonthlyAvgCost))
-  console.log("[v0] - 현장당 월평균 절감금액:", Math.round(avgMonthlyCostPerSite))
-  console.log("[v0] - 실내기당 절감금액 (총합/총실내기):", Math.round(avgMonthlyCostPerIndoorUnit))
-  console.log("[v0] - 총 절감량:", Math.round(totalSavingsAmount), "kWh")
-  console.log("[v0] - 총 비절감절감량:", Math.round(totalNonSavingsAmount), "kWh")
-  console.log("[v0] - 평균 절감률 (절감량/비절감절감량):", avgSavingsRate.toFixed(1), "%")
-  console.log("[v0] ===== calculatePerSiteStats 종료 =====")
 
   return {
     siteCount,
@@ -360,16 +281,7 @@ export function calculateTotalStats(data: SiteData[]) {
   const totalAfterPower = data.reduce((sum, d) => sum + d.절감사용량, 0)
 
   const avgSavingsRate = totalBeforePower > 0 ? (totalSavingsAmount / totalBeforePower) * 100 : 0
-
   const perSiteStats = calculatePerSiteStats(data)
-
-  console.log("[v0] 통계 계산 완료:")
-  console.log("[v0] - 총 현장 수 (최근 월):", totalSites)
-  console.log("[v0] - 총 실내기 대수 (최근 월):", totalIndoorUnits)
-  console.log("[v0] - 총 절감량 (월별 합산):", Math.round(totalSavingsAmount), "kWh")
-  console.log("[v0] - 총 비절감절감량:", Math.round(totalBeforePower), "kWh")
-  console.log("[v0] - 절감률 (절감량/비절감절감량):", avgSavingsRate.toFixed(1), "%")
-  console.log("[v0] - 총 절감비용:", Math.round(totalSavingsCost), "원")
 
   return {
     totalSites,
@@ -445,9 +357,6 @@ export function calculateBusinessTypeStats(data: SiteData[]) {
 }
 
 export const BUSINESS_TYPES = ["공장", "빌딩", "병원", "숙박업", "초중고", "공공기관", "기타", "대학교"] as const
-
 export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const
-
 export const SCALES = ["소형", "중소형", "중형", "대형"] as const
-
 export const LOGIC_VERSIONS = [1, 2] as const
