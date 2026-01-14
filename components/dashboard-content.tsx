@@ -114,10 +114,16 @@ export function DashboardContent() {
   console.log("[v0] - 실내기당 월평균 절감금액:", avgSavingsCostPerIndoorUnit, "원")
   console.log("[v0] - 평균 절감률:", avgSavingsRate.toFixed(1), "%")
 
-  const avgBeforeCostPerSite =
-    stats.totalSites > 0 ? Math.round((stats.totalBeforePower * avgRate) / stats.totalSites) : 0
-  const avgAfterCostPerSite =
-    stats.totalSites > 0 ? Math.round((stats.totalAfterPower * avgRate) / stats.totalSites) : 0
+  // 현장별 월평균 비절감 전력량 계산 (calculatePerSiteStats와 동일 로직)
+  const avgBeforePowerPerSite =
+    stats.totalSites > 0
+      ? Math.round(avgSavingsAmount / (avgSavingsRate / 100)) // 절감량 / 절감률 = 비절감 전력량
+      : 0
+  const avgAfterPowerPerSite = avgBeforePowerPerSite - avgSavingsAmount // 비절감 - 절감량 = 절감 후 전력량
+
+  // 전기요금 계산기용 금액 계산
+  const avgBeforeCostPerSite = Math.round(avgBeforePowerPerSite * avgRate)
+  const avgAfterCostPerSite = Math.round(avgAfterPowerPerSite * avgRate)
   const avgSavingsCostPerSite = avgBeforeCostPerSite - avgAfterCostPerSite
 
   return (
@@ -397,16 +403,15 @@ export function DashboardContent() {
         </CardContent>
       </Card>
 
-      <Card className="border border-gray-200 shadow-sm">
-        <Collapsible open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
-          <CollapsibleTrigger className="w-full">
-            <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10 hover:from-[#8B1538]/10 hover:to-[#8B1538]/15 transition-colors cursor-pointer">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg md:text-xl font-lg-bold">전기요금 계산기</CardTitle>
-                <ChevronDown
-                  className={`w-5 h-5 text-muted-foreground transition-transform ${isCalculatorOpen ? "rotate-180" : ""}`}
-                />
-              </div>
+      {/* 전기요금 계산기 섹션 - 수정 */}
+      <Card className="border border-gray-200 shadow-sm overflow-hidden">
+        <Collapsible defaultOpen={false}>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="bg-gradient-to-r from-[#8B1538]/5 to-[#8B1538]/10 cursor-pointer hover:bg-[#8B1538]/10 transition-colors">
+              <CardTitle className="text-lg md:text-xl font-lg-bold flex items-center justify-between">
+                전기요금 계산기
+                <ChevronDown className="h-5 w-5 transition-transform" />
+              </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -437,10 +442,7 @@ export function DashboardContent() {
                       ₩{avgBeforeCostPerSite.toLocaleString()}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                      {stats.totalSites > 0
-                        ? Math.round(stats.totalBeforePower / stats.totalSites).toLocaleString()
-                        : 0}{" "}
-                      kWh
+                      {Math.round(avgBeforePowerPerSite).toLocaleString()} kWh
                     </div>
                   </div>
                   <div className="p-3 md:p-4 bg-muted rounded-lg">
@@ -451,8 +453,7 @@ export function DashboardContent() {
                       ₩{avgAfterCostPerSite.toLocaleString()}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                      {stats.totalSites > 0 ? Math.round(stats.totalAfterPower / stats.totalSites).toLocaleString() : 0}{" "}
-                      kWh
+                      {Math.round(avgAfterPowerPerSite).toLocaleString()} kWh
                     </div>
                   </div>
                   <div className="p-3 md:p-4 bg-muted rounded-lg">
@@ -463,7 +464,7 @@ export function DashboardContent() {
                       ₩{avgSavingsCostPerSite.toLocaleString()}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 font-lg-regular">
-                      절감률 {stats.avgSavingsRate.toFixed(1)}%
+                      절감률 {avgSavingsRate.toFixed(1)}%
                     </div>
                   </div>
                 </div>
