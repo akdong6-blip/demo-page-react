@@ -1,10 +1,10 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { DashboardContent } from "@/components/dashboard-content"
+import { StatusContent } from "@/components/status-content"
 
-export default function DashboardPage() {
+export default function HomePage() {
   return (
     <DashboardLayout>
-      <DashboardContent />
+      <StatusContent />
     </DashboardLayout>
   )
 }
