@@ -284,7 +284,14 @@ export function DashboardContent() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-lg-bold text-muted-foreground">현장별 월평균</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4 bg-muted/30 rounded-lg border border-gray-200">
+              <div className="space-y-1">
+                <div className="text-xs text-muted-foreground font-lg-regular">현장수</div>
+                <div className="text-xl font-lg-bold">
+                  {stats.totalSites.toLocaleString()}{" "}
+                  <span className="text-sm font-lg-regular text-muted-foreground">site</span>
+                </div>
+              </div>
               <div className="space-y-1">
                 <div className="text-xs text-muted-foreground font-lg-regular">평균 절감량</div>
                 <div className="text-xl font-lg-bold">{avgSavingsAmount.toLocaleString()} kWh</div>
