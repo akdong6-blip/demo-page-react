@@ -17,7 +17,7 @@ export function StatusContent() {
   const [siteData, setSiteData] = useState<SiteData[]>([])
   const [regionalData, setRegionalData] = useState<Array<{ region: string; sites: number; percentage: number }>>([])
   const [industryData, setIndustryData] = useState<
-    Array<{ category: string; sites: number; percentage: number; avgSavingsRate: number }>
+    Array<{ category: string; sites: number; percentage: number; avgSavingsRate: number; avgMonthlyCost: number }>
   >([])
   const [isChartsOpen, setIsChartsOpen] = useState(false)
   const [perSiteStats, setPerSiteStats] = useState<{
@@ -64,11 +64,28 @@ export function StatusContent() {
           const avgSavingsRate =
             validRates.length > 0 ? validRates.reduce((sum, r) => sum + r.절감률, 0) / validRates.length : 0
 
+          // 현장별 월평균 절감금액 계산
+          const siteGroups = new Map<string, typeof businessRecords>()
+          for (const record of businessRecords) {
+            const existing = siteGroups.get(record.ID_SITE) || []
+            existing.push(record)
+            siteGroups.set(record.ID_SITE, existing)
+          }
+          
+          let totalMonthlyCost = 0
+          for (const [, records] of siteGroups) {
+            const siteTotalCost = records.reduce((sum, r) => sum + r.절감비용, 0)
+            const siteAvgCost = siteTotalCost / records.length
+            totalMonthlyCost += siteAvgCost
+          }
+          const avgMonthlyCost = siteGroups.size > 0 ? Math.round(totalMonthlyCost / siteGroups.size) : 0
+
           return {
             category,
             sites: siteIds.length,
             percentage: totalSiteCount > 0 ? (siteIds.length / totalSiteCount) * 100 : 0,
             avgSavingsRate,
+            avgMonthlyCost,
           }
         })
         .sort((a, b) => b.sites - a.sites)
@@ -197,6 +214,9 @@ export function StatusContent() {
                     </div>
                     <div className="text-sm text-chart-4 mt-1 font-lg-regular">
                       절감률 {data.avgSavingsRate.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-chart-3 mt-1 font-lg-regular">
+                      월평균 ₩{data.avgMonthlyCost.toLocaleString()}
                     </div>
                   </div>
                 </CardContent>
