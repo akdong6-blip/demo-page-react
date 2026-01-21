@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   ChevronRight,
   ChevronLeft,
+  Calculator,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ const navigation = [
   { name: "대시보드", href: "/dashboard", icon: LayoutDashboard },
   { name: "로직", href: "/logic", icon: FileText },
   { name: "에너지 리포트", href: "/report", icon: FileBarChart },
+  { name: "견적 계산기", href: "/calculator", icon: Calculator },
 ]
 
 const energyWasteFactors = [
