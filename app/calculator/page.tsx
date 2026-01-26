@@ -305,11 +305,13 @@ export default function CalculatorPage() {
                   {/* 절감금액 예상 */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">절감금액 (예상/연간)</span>
+                      <span className="text-muted-foreground">예상 절감금액 (연간)</span>
                       <span className="font-bold text-chart-3">{Math.round(expectedSavings).toLocaleString()}원</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      실내기당 연간 {Math.round(calculatedStats.annualSavingsPerUnit).toLocaleString()}원 × {indoorUnitCount}대
+                      1년간 무상 체험 후 예상되는 에너지 절감 금액입니다.
+                      <br />
+                      (실내기당 연간 {Math.round(calculatedStats.annualSavingsPerUnit).toLocaleString()}원 × {indoorUnitCount}대)
                     </p>
                   </div>
 
@@ -320,7 +322,9 @@ export default function CalculatorPage() {
                       <span className="font-medium text-amber-500">{energyProductPrice.toLocaleString()}원</span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      예상 절감금액의 20%
+                      재계약 시 예상 절감금액의 20%를 에너지 서비스 비용으로 책정합니다.
+                      <br />
+                      절감 효과를 직접 확인하신 후, 그 가치의 일부만 지불하시면 됩니다.
                     </p>
                   </div>
 
@@ -329,11 +333,13 @@ export default function CalculatorPage() {
                   {/* 에너지 포함 재계약시 상품가 */}
                   <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">에너지 포함 재계약시 상품가</span>
+                      <span className="text-sm font-medium">에너지 포함 재계약 시 상품가</span>
                     </div>
                     <p className="text-2xl font-bold text-primary">{renewalPrice.toLocaleString()}원</p>
                     <p className="text-xs text-muted-foreground">
-                      유지보수금액 + 에너지 상품가격 (절감금액의 20%)
+                      기존 유지보수금액({originalMaintenanceCost.toLocaleString()}원)에 에너지 상품가격({energyProductPrice.toLocaleString()}원)을 더한 금액입니다.
+                      <br />
+                      재계약 시 실제로 청구되는 금액입니다.
                     </p>
                   </div>
 
@@ -345,9 +351,11 @@ export default function CalculatorPage() {
                     </div>
                     <p className="text-2xl font-bold text-chart-3">{Math.round(effectivePrice).toLocaleString()}원</p>
                     <p className="text-xs text-muted-foreground">
-                      에너지 포함 재계약시 상품가에서 예상 절감금액을 제외한 금액입니다.
+                      에너지 포함 재계약 시 상품가({renewalPrice.toLocaleString()}원)에서 예상 절감금액({Math.round(expectedSavings).toLocaleString()}원)을 빼면,
                       <br />
-                      고객이 실질적으로 부담하는 금액으로 체감됩니다.
+                      <strong>고객이 실질적으로 체감하는 비용은 {Math.round(effectivePrice).toLocaleString()}원</strong>입니다.
+                      <br />
+                      에너지 절감으로 돌려받는 금액을 고려하면, 실제 부담은 이 정도입니다.
                     </p>
                   </div>
                 </>
